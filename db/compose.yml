@@ -1,0 +1,39 @@
+# 로컬 개발용 PostgreSQL + 마이그레이션
+# 배포용 아님 — 비밀번호가 그대로 적혀 있다.
+#
+#   docker compose -f db/compose.yml up -d      DB 띄우고 스키마까지 반영
+#   docker compose -f db/compose.yml down       내리기 (데이터는 남는다)
+#   docker compose -f db/compose.yml down -v    데이터까지 지우기
+
+name: ondo
+
+services:
+  db:
+    image: postgres:16          # 버전을 못 박는다. 팀과 같은 걸 써야 한다
+    container_name: ondo-db
+    environment:
+      POSTGRES_DB: ondo
+      POSTGRES_USER: ondo
+      POSTGRES_PASSWORD: ondo
+      TZ: Asia/Seoul
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:                # migrate 가 이걸 보고 기다린다
+      test: ["CMD-SHELL", "pg_isready -U ondo -d ondo"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:                      # 스키마는 앱이 아니라 여기서 넣는다
+    image: flyway/flyway:13
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./migration:/flyway/sql
+    command: -url=jdbc:postgresql://db:5432/ondo -user=ondo -password=ondo migrate
+
+volumes:
+  pgdata:

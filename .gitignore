@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 빌드 산출물 (각 프로젝트에도 .gitignore 가 있지만 안전망)
+build/
+.gradle/
