@@ -114,6 +114,38 @@ CREATE TABLE wholesale.wholesaler_document (
 
 
 -- ═══════════════════════════════════════════════════════════════
+--  wholesale · 세션
+--  Spring Session JDBC 가 요구하는 모양 그대로다. retail.spring_session 과 같다.
+--  소매와 나눈다 — 사용자 유형이 다르고 스키마 경계와 맞다.
+--  인덱스 이름에 wh_ 를 붙인 건 인덱스가 스키마를 넘어 유일해야 하기 때문이다.
+--  설정: spring.session.jdbc.table-name=wholesale.spring_session
+-- ═══════════════════════════════════════════════════════════════
+
+CREATE TABLE wholesale.spring_session (
+    primary_id             char(36)     NOT NULL,               -- 내부 키
+    session_id             char(36)     NOT NULL,               -- 쿠키에 실리는 이름표. 재발급되면 바뀐다
+    creation_time          bigint       NOT NULL,               -- epoch millis
+    last_access_time       bigint       NOT NULL,
+    max_inactive_interval  int          NOT NULL,               -- 초. 이만큼 안 쓰면 만료
+    expiry_time            bigint       NOT NULL,
+    principal_name         varchar(100),                        -- 로그인 계정. 계정 정지 시 이걸로 찾아 지운다
+    CONSTRAINT wh_spring_session_pk PRIMARY KEY (primary_id)
+);
+CREATE UNIQUE INDEX wh_spring_session_id_uk         ON wholesale.spring_session (session_id);
+CREATE INDEX        wh_spring_session_expiry_idx    ON wholesale.spring_session (expiry_time);
+CREATE INDEX        wh_spring_session_principal_idx ON wholesale.spring_session (principal_name);
+
+CREATE TABLE wholesale.spring_session_attributes (
+    session_primary_id  char(36)     NOT NULL,
+    attribute_name      varchar(200) NOT NULL,
+    attribute_bytes     bytea        NOT NULL,                  -- 자바 직렬화. SQL 로는 안 읽힌다
+    CONSTRAINT wh_spring_session_attributes_pk PRIMARY KEY (session_primary_id, attribute_name),
+    CONSTRAINT wh_spring_session_attributes_fk FOREIGN KEY (session_primary_id)
+        REFERENCES wholesale.spring_session (primary_id) ON DELETE CASCADE
+);
+
+
+-- ═══════════════════════════════════════════════════════════════
 --  wholesale · 상품
 -- ═══════════════════════════════════════════════════════════════
 
