@@ -120,7 +120,8 @@ CREATE TABLE wholesale.wholesaler_document (
 CREATE TABLE wholesale.product (
     id                 bigserial   PRIMARY KEY,
     wholesaler_id      bigint      NOT NULL REFERENCES wholesale.wholesaler (id),
-    product_number     varchar(20) NOT NULL,                   -- SKU-0001. 영구 결번 (D-004)
+    product_number     int         NOT NULL,                   -- 도매처별 연번. 영구 결번 (D-004)
+                                                               -- 표시 코드(SU-18)는 프론트 조립
     name               varchar(100) NOT NULL,
     category_id        bigint      NOT NULL REFERENCES common.category (id),  -- 리프(depth 3)만 (D-058)
     last_variant_seq   int         NOT NULL DEFAULT 0,         -- variant 채번
@@ -144,7 +145,7 @@ CREATE TABLE wholesale.variant (
     id                       bigserial     PRIMARY KEY,
     color_option_id          bigint        NOT NULL REFERENCES wholesale.color_option (id),
     product_id               bigint        NOT NULL REFERENCES wholesale.product (id),  -- 중복 보유 (D-055). 불변
-    size                     varchar(10)   NOT NULL,           -- CHECK 7값 - 값 목록 미확인
+    size                     varchar(10)   NOT NULL,           -- CHECK 은 아래. 낱장은 F 가 아니라 FREE
     variant_seq              int           NOT NULL,           -- 표시코드는 파생, 저장 안 함
     stock_qty                int           NOT NULL DEFAULT 0, -- 현재고
     reserved_qty             int           NOT NULL DEFAULT 0, -- 주문처리중. 도메인 메서드로만
@@ -155,6 +156,7 @@ CREATE TABLE wholesale.variant (
     created_at               timestamptz   NOT NULL DEFAULT now(),
     updated_at               timestamptz   NOT NULL DEFAULT now(),
     CONSTRAINT variant_seq_uk  UNIQUE (product_id, variant_seq),        -- full. 영구 결번
+    CONSTRAINT variant_size_ck     CHECK (size IN ('XS','S','M','L','XL','2XL','FREE')),
     CONSTRAINT variant_stock_ck    CHECK (stock_qty >= 0),
     CONSTRAINT variant_reserved_ck CHECK (reserved_qty >= 0)
 );
@@ -261,7 +263,8 @@ CREATE TABLE wholesale.partner (
 
 CREATE TABLE wholesale.orders (                                -- ORDER 는 예약어
     id               bigserial   PRIMARY KEY,
-    order_number     varchar(20) NOT NULL,                     -- ORD-001. 도매처별 연번 (D-064)
+    order_number     int         NOT NULL,                     -- 도매처별 연번 (D-064)
+                                                               -- 표시 코드(ORD-001)는 프론트 조립
     retail_order_id  bigint,                                   -- 소매 통합 주문서. 논리 참조. 도매 직접 주문은 NULL
     partner_id       bigint      NOT NULL REFERENCES wholesale.partner (id),      -- [M-2]
     wholesaler_id    bigint      NOT NULL REFERENCES wholesale.wholesaler (id),   -- 비정규화
