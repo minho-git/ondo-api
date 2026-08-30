@@ -33,6 +33,7 @@ cd retail-api    && ./gradlew bootRun        # 8080
 - **브랜치** — `<타입>/MUL-<번호>-<짧은설명>` · 예: `feat/MUL-123-order-confirm-api`
 - **커밋** — `<타입>: MUL-<번호> <설명>` · 예: `feat: MUL-123 주문 확정 API 구현`
 - **PR 제목** — `[MUL-<번호>] <설명>` · 예: `[MUL-123] 주문 확정 API 구현` · base 는 `dev`
+- **PR 본문** — `.github/PULL_REQUEST_TEMPLATE.md` 양식을 채운다 (Background / Tasks / Affected / Test)
 - 타입 어휘는 셋 다 공통 — `feat` · `fix` · `refactor` · `test` · `docs` · `chore`
 - `MUL` 은 지라 프로젝트 키다. **지라 티켓이 없는 작업(초기 세팅 등)은 키를 생략**한다.
 - **비밀은 커밋하지 않는다.** 환경변수로 주입. (compose 의 `ondo/ondo` 는 로컬 전용, 배포용 아님)
