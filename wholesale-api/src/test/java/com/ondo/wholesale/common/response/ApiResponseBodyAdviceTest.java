@@ -1,5 +1,7 @@
 package com.ondo.wholesale.common.response;
 
+import com.ondo.wholesale.common.error.ErrorCode;
+import com.ondo.wholesale.common.error.ErrorResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpStatus;
@@ -36,6 +38,13 @@ class ApiResponseBodyAdviceTest {
         ApiResponse<String> already = ApiResponse.of("x");
 
         assertThat(write(already)).isSameAs(already);
+    }
+
+    @Test
+    void ErrorResponse는_감싸지_않는다() {
+        ErrorResponse error = ErrorResponse.of(ErrorCode.RESOURCE_NOT_FOUND, "없음", null, "trace-1");
+
+        assertThat(write(error)).isSameAs(error);
     }
 
     @Test

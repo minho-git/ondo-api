@@ -1,5 +1,6 @@
 package com.ondo.wholesale.common.response;
 
+import com.ondo.wholesale.common.error.ErrorResponse;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -40,6 +41,7 @@ public class ApiResponseBodyAdvice implements ResponseBodyAdvice<Object> {
                                   ServerHttpRequest request, ServerHttpResponse response) {
         if (body == null
                 || body instanceof ApiResponse<?>
+                || body instanceof ErrorResponse
                 || body instanceof ProblemDetail
                 || body instanceof byte[]
                 || body instanceof Resource) {
