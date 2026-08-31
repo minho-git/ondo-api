@@ -14,8 +14,18 @@ build/
 docs-local/
 agent-local/
 
+# 에이전트 도구 세션 상태
+.omc/
+
 # 비밀 · 인증정보 (커밋 금지 — Jira API 토큰 등 어떤 secret 도 올리지 않는다)
 # Jira MCP 는 OAuth 라 .env 가 필요 없지만, 실수 방지용 안전망으로 둔다.
 .env
 .env.local
 .env.*.local
+
+# Terraform (.terraform.lock.hcl 은 커밋한다 — 프로바이더 버전을 고정한다)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
