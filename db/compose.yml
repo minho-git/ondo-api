@@ -1,39 +1,53 @@
-# 로컬 개발용 PostgreSQL + 마이그레이션
+# 로컬 개발용 PostgreSQL 두 대. 도매 / 소매
 # 배포용 아님 — 비밀번호가 그대로 적혀 있다.
 #
-#   docker compose -f db/compose.yml up -d      DB 띄우고 스키마까지 반영
+#   docker compose -f db/compose.yml up -d      DB 두 대 띄우기
 #   docker compose -f db/compose.yml down       내리기 (데이터는 남는다)
 #   docker compose -f db/compose.yml down -v    데이터까지 지우기
+#
+# 스키마는 여기서 안 넣는다. 각 앱이 뜰 때 자기 마이그레이션을 돌린다
+#   wholesale-api/src/main/resources/db/migration/
+#   retail-api/src/main/resources/db/migration/
 
 name: ondo
 
 services:
-  db:
+  wholesale-db:
     image: postgres:16          # 버전을 못 박는다. 팀과 같은 걸 써야 한다
-    container_name: ondo-db
+    container_name: ondo-wholesale-db
     environment:
-      POSTGRES_DB: ondo
+      POSTGRES_DB: ondo_wholesale
       POSTGRES_USER: ondo
       POSTGRES_PASSWORD: ondo
       TZ: Asia/Seoul
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:                # migrate 가 이걸 보고 기다린다
-      test: ["CMD-SHELL", "pg_isready -U ondo -d ondo"]
+      - wholesale-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ondo -d ondo_wholesale"]
       interval: 5s
       timeout: 3s
       retries: 10
 
-  migrate:                      # 스키마는 앱이 아니라 여기서 넣는다
-    image: flyway/flyway:13
-    depends_on:
-      db:
-        condition: service_healthy
+  retail-db:
+    image: postgres:16
+    container_name: ondo-retail-db
+    environment:
+      POSTGRES_DB: ondo_retail
+      POSTGRES_USER: ondo
+      POSTGRES_PASSWORD: ondo
+      TZ: Asia/Seoul
+    ports:
+      - "5433:5432"             # 5432 는 도매가 쓴다
     volumes:
-      - ./migration:/flyway/sql
-    command: -url=jdbc:postgresql://db:5432/ondo -user=ondo -password=ondo migrate
+      - retail-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ondo -d ondo_retail"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
 volumes:
-  pgdata:
+  wholesale-pgdata:
+  retail-pgdata:

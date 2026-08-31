@@ -10,6 +10,10 @@
 build/
 .gradle/
 
+# 개인 문서 · 에이전트 (올리지 않는다)
+docs-local/
+agent-local/
+
 # 비밀 · 인증정보 (커밋 금지 — Jira API 토큰 등 어떤 secret 도 올리지 않는다)
 # Jira MCP 는 OAuth 라 .env 가 필요 없지만, 실수 방지용 안전망으로 둔다.
 .env

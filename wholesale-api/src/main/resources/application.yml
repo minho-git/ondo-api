@@ -1,12 +1,19 @@
-server:
-  port: 8081                  # 소매(8080)와 나란히 띄운다
-
 spring:
   application:
     name: wholesale-api
   profiles:
     default: local
+  flyway:
+    default-schema: wholesale   # 이력 테이블(flyway_schema_history)이 여기 생긴다
   jpa:
     hibernate:
       ddl-auto: validate      # 스키마는 마이그레이션이 만든다. 엔티티와 어긋나면 앱이 안 뜬다
     open-in-view: false
+    properties:
+      hibernate:
+        default_schema: wholesale   # common 테이블은 @Table(schema = "common") 을 따로 붙인다
+  session:
+    jdbc:
+      table-name: wholesale.spring_session
+server:
+  port: 8081                  # 소매가 8080 이라 겹치지 않게
