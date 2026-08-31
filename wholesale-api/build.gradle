@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '4.1.1'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'jacoco'
 }
 
 group = 'com.ondo'
@@ -39,6 +40,28 @@ dependencies {
 	testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
+jacoco {
+	toolVersion = '0.8.12'   // Java 21 지원
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
+	finalizedBy tasks.named('jacocoTestReport')   // 테스트 후 리포트 자동 생성
+}
+
+tasks.named('jacocoTestReport') {
+	dependsOn tasks.named('test')
+	reports {
+		xml.required = true    // CI/커버리지 서비스용
+		html.required = true   // 사람이 볼 용도
+	}
+	// 커버리지 통계에서 제외: 부트스트랩 진입점 (게이트는 아직 없음, 리포트 왜곡 방지)
+	def excluded = [
+		'com/ondo/wholesale/WholesaleApiApplication.class'
+	]
+	classDirectories.setFrom(
+		files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: excluded)
+		})
+	)
 }
