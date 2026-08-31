@@ -1,0 +1,6 @@
+# 로컬 개발용. db/compose.yml 로 띄운 PostgreSQL 을 본다.
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ondo
+    username: ondo
+    password: ondo
