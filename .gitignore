@@ -9,3 +9,9 @@
 # 빌드 산출물 (각 프로젝트에도 .gitignore 가 있지만 안전망)
 build/
 .gradle/
+
+# 비밀 · 인증정보 (커밋 금지 — Jira API 토큰 등 어떤 secret 도 올리지 않는다)
+# Jira MCP 는 OAuth 라 .env 가 필요 없지만, 실수 방지용 안전망으로 둔다.
+.env
+.env.local
+.env.*.local
