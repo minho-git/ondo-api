@@ -33,6 +33,19 @@ public class SecurityConfig {
     };
 
     /**
+     * API 문서. 프론트가 붙기 전에 봐야 해서 연다.
+     *
+     * <p>⚠️ 실서비스 개시 전에는 닫거나 인증을 건다. 엔드포인트 목록과 요청 모양이
+     * 그대로 드러나서, 공개해두면 공격면을 알려주는 셈이 된다.
+     */
+    private static final String[] DOCS_PATHS = {
+            "/v3/api-docs",      // OpenAPI JSON. springdoc 이 만든다
+            "/v3/api-docs/**",
+            "/docs",             // Scalar 화면
+            "/docs/**"
+    };
+
+    /**
      * 인증 정보를 세션에 넣고 꺼내는 곳. Spring Session 이 그 세션을 DB 로 보낸다.
      *
      * <p>로그인할 때 우리가 직접 {@code saveContext} 를 불러야 해서 빈으로 꺼내 뒀다.
@@ -51,6 +64,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_PATHS).permitAll()
+                        .requestMatchers(DOCS_PATHS).permitAll()
                         .anyRequest().authenticated())
 
                 // 세션은 쓰지만 스프링 시큐리티가 알아서 만들게 두지 않는다.
