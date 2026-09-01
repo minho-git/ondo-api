@@ -2,7 +2,9 @@ package com.ondo.retail.config;
 
 import com.ondo.retail.common.error.ErrorCode;
 import com.ondo.retail.common.error.ErrorResponse;
+import com.ondo.retail.security.ApprovedAuthorizationManager;
 import tools.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -46,6 +48,17 @@ public class SecurityConfig {
     };
 
     /**
+     * 로그인만 하면 되는 곳. 승인 전에도 열어둔다.
+     *
+     * <p>승인 대기 · 거절 화면이 자기 상태를 봐야 하고, 나가는 것도 돼야 한다.
+     * 재신청과 비밀번호 변경은 추후 기능이라 아직 없다.
+     */
+    private static final String[] AUTHENTICATED_ONLY_PATHS = {
+            "/api/retail/auth/me",
+            "/api/retail/auth/logout"
+    };
+
+    /**
      * 인증 정보를 세션에 넣고 꺼내는 곳. Spring Session 이 그 세션을 DB 로 보낸다.
      *
      * <p>로그인할 때 우리가 직접 {@code saveContext} 를 불러야 해서 빈으로 꺼내 뒀다.
@@ -58,14 +71,17 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            ObjectMapper objectMapper,
-                                           SecurityContextRepository securityContextRepository) throws Exception {
+                                           SecurityContextRepository securityContextRepository,
+                                           ApprovedAuthorizationManager approvedAuthorizationManager) throws Exception {
         http
                 .securityContext(context -> context.securityContextRepository(securityContextRepository))
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_PATHS).permitAll()
                         .requestMatchers(DOCS_PATHS).permitAll()
-                        .anyRequest().authenticated())
+                        .requestMatchers(AUTHENTICATED_ONLY_PATHS).authenticated()
+                        // 나머지는 승인까지 돼야 한다. 앞으로 만드는 API 가 자동으로 걸린다
+                        .anyRequest().access(approvedAuthorizationManager))
 
                 // 세션은 쓰지만 스프링 시큐리티가 알아서 만들게 두지 않는다.
                 // 로그인 성공 시 우리가 직접 만든다.
@@ -87,7 +103,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, e) ->
                                 write(response, objectMapper, ErrorCode.UNAUTHORIZED))
                         .accessDeniedHandler((request, response, e) ->
-                                write(response, objectMapper, ErrorCode.FORBIDDEN)))
+                                write(response, objectMapper, deniedCodeFor(request))))
 
                 // 쿠키 인증이라 CSRF 방어가 필요하지만 방식이 아직 미정이다(숙제.md).
                 // 프론트 배포 구성과 같이 정하기로 해서 지금은 꺼둔다.
@@ -99,6 +115,17 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * 거부 사유를 가른다.
+     *
+     * <p>승인 대기·거절이면 프론트가 승인 대기 화면으로 돌려야 해서 코드를 따로 준다.
+     * 지금 소매에서 인증된 사용자가 막히는 경우는 미승인뿐이라 그렇게 본다.
+     * 권한 종류가 늘면 여기서 갈라야 한다.
+     */
+    private ErrorCode deniedCodeFor(HttpServletRequest request) {
+        return ErrorCode.ACCOUNT_NOT_APPROVED;
     }
 
     private static void write(HttpServletResponse response, ObjectMapper mapper, ErrorCode code) {
