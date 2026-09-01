@@ -6,6 +6,7 @@ import com.ondo.wholesale.auth.dto.SignupRequest;
 import com.ondo.wholesale.auth.dto.SignupResponse;
 import com.ondo.wholesale.common.error.ApiException;
 import com.ondo.wholesale.common.error.ErrorCode;
+import com.ondo.wholesale.common.text.EmailNormalizer;
 import com.ondo.wholesale.common.error.ErrorResponse;
 import com.ondo.wholesale.wholesaler.ConsentType;
 import com.ondo.wholesale.wholesaler.DocumentType;
@@ -20,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -61,7 +61,7 @@ public class SignupService {
         validateConsents(request.consents());
         validateDocuments(request.documents());
 
-        String email = normalizeEmail(request.email());
+        String email = EmailNormalizer.normalize(request.email());
         rejectIfDuplicated(email, request.bizRegNo());
 
         // 해싱은 트랜잭션 밖에서. 커넥션을 잡은 채로 CPU 를 돌지 않는다
@@ -167,16 +167,6 @@ public class SignupService {
     }
 
     // ── 조립 ────────────────────────────────────────
-
-    /**
-     * 이메일을 소문자로 맞춘다.
-     *
-     * <p>{@link Locale#ROOT} 를 반드시 준다 — 터키어 로케일에서
-     * {@code "I".toLowerCase()} 는 {@code "ı"} 가 되어 서버 설정에 따라 결과가 달라진다.
-     */
-    private String normalizeEmail(String email) {
-        return email.toLowerCase(Locale.ROOT);
-    }
 
     private Wholesaler toWholesaler(SignupRequest request, String email, String passwordHash) {
         Wholesaler wholesaler = Wholesaler.builder()
