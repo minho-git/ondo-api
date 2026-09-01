@@ -12,7 +12,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 
 /**
  * 어디를 열고 어디를 막을지 정한다.
@@ -31,9 +32,23 @@ public class SecurityConfig {
             "/actuator/health"
     };
 
+    /**
+     * 인증 정보를 세션에 넣고 꺼내는 곳. Spring Session 이 그 세션을 DB 로 보낸다.
+     *
+     * <p>로그인할 때 우리가 직접 {@code saveContext} 를 불러야 해서 빈으로 꺼내 뒀다.
+     */
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, ObjectMapper objectMapper) throws Exception {
+    public SecurityContextRepository securityContextRepository() {
+        return new HttpSessionSecurityContextRepository();
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           ObjectMapper objectMapper,
+                                           SecurityContextRepository securityContextRepository) throws Exception {
         http
+                .securityContext(context -> context.securityContextRepository(securityContextRepository))
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_PATHS).permitAll()
                         .anyRequest().authenticated())

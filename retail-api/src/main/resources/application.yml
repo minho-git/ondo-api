@@ -19,6 +19,9 @@ spring:
 
 server:
   servlet:
+    multipart:
+      max-file-size: 10MB       # 명세상 사업자등록증 10MB. 스프링 기본값은 1MB 다
+      max-request-size: 12MB    # 파일 + payload 를 합친 상한
     session:
       timeout: 2h               # 미정 상태다(숙제.md). 새벽 영업이라 짧으면 작업 중에 튕긴다
       cookie:
