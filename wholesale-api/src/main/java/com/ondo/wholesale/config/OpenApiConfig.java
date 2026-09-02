@@ -58,7 +58,7 @@ public class OpenApiConfig {
                                 }
                                 content.values().forEach(mediaType -> {
                                     Schema<?> original = mediaType.getSchema();
-                                    if (original == null || isEnveloped(original)) {
+                                    if (original == null || isEnveloped(original, openApi)) {
                                         return;
                                     }
                                     Schema<Object> envelope = new ObjectSchema();
@@ -69,9 +69,19 @@ public class OpenApiConfig {
         };
     }
 
-    /** 반환 타입이 이미 {@code ApiResponse<...>} 라 스키마 이름이 ApiResponse 로 시작하는 경우. */
-    private boolean isEnveloped(Schema<?> schema) {
+    /**
+     * 반환 타입이 이미 봉투({@code ResponseEnvelope} 구현)인 경우 — 컴포넌트 스키마를
+     * 따라가 {@code data} 프로퍼티가 있으면 봉투로 본다. advice 의 통과 규칙과 짝이다.
+     */
+    private boolean isEnveloped(Schema<?> schema, OpenAPI openApi) {
         String ref = schema.get$ref();
-        return ref != null && ref.startsWith("#/components/schemas/ApiResponse");
+        if (ref == null || !ref.startsWith("#/components/schemas/")) {
+            return false;
+        }
+        String name = ref.substring("#/components/schemas/".length());
+        Schema<?> resolved = openApi.getComponents() == null || openApi.getComponents().getSchemas() == null
+                ? null
+                : openApi.getComponents().getSchemas().get(name);
+        return resolved != null && resolved.getProperties() != null && resolved.getProperties().containsKey("data");
     }
 }

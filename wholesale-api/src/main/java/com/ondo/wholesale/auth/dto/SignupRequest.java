@@ -1,5 +1,6 @@
 package com.ondo.wholesale.auth.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -26,39 +27,49 @@ import java.util.List;
  */
 public record SignupRequest(
 
+        @Schema(example = "owner@dodo.example")
         @NotBlank(message = "이메일을 입력해주세요.")
         @Email(message = "이메일 형식이 아닙니다.")
         @Size(max = 100, message = "이메일이 너무 깁니다.")
         String email,
 
         // 길이·문자 조합은 서비스가 본다(PASSWORD_POLICY_VIOLATED)
+        @Schema(example = "Ondo!2345")
         @NotBlank(message = "비밀번호를 입력해주세요.")
         String password,
 
+        @Schema(example = "01012345678")
         @Pattern(regexp = "\\d{10,11}", message = "휴대전화번호는 숫자 10~11자리입니다.")
         String phone,
 
+        @Schema(example = "1234567890")
         @NotBlank(message = "사업자등록번호를 입력해주세요.")
         @Pattern(regexp = "\\d{10}", message = "사업자등록번호는 숫자 10자리입니다.")
         String bizRegNo,
 
+        @Schema(example = "도도도매")
         @NotBlank(message = "상호를 입력해주세요.")
         @Size(max = 50, message = "상호는 50자까지 쓸 수 있습니다.")
         String bizName,
 
+        @Schema(example = "김도매")
         @NotBlank(message = "대표자명을 입력해주세요.")
         @Size(max = 50, message = "대표자명은 50자까지 쓸 수 있습니다.")
         String bizOwnerName,
 
+        @Schema(example = "025551234")
         @Pattern(regexp = "\\d{9,11}", message = "매장 전화번호는 숫자 9~11자리입니다.")
         String storePhone,
 
+        @Schema(example = "디오트")
         @Size(max = 50, message = "건물명은 50자까지 쓸 수 있습니다.")
         String storeBuilding,
 
+        @Schema(example = "B1 123호")
         @Size(max = 50, message = "호수는 50자까지 쓸 수 있습니다.")
         String storeUnit,
 
+        @Schema(example = "여성의류")
         @Size(max = 50, message = "업종은 50자까지 쓸 수 있습니다.")
         String bizCategory,
 

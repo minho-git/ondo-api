@@ -1,6 +1,7 @@
 package com.ondo.wholesale.auth.dto;
 
 import com.ondo.wholesale.wholesaler.DocumentType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -18,9 +19,11 @@ import jakarta.validation.constraints.Size;
  */
 public record DocumentRequest(
 
+        @Schema(example = "BIZ_REG")
         @NotNull(message = "서류 종류를 지정해주세요.")
         DocumentType type,
 
+        @Schema(example = "uploads/2026/09/ab12cd34.jpg")
         @NotBlank(message = "서류 파일을 올려주세요.")
         @Size(max = 500, message = "파일 경로가 너무 깁니다.")
         // uploads/ 로 시작하는 상대 경로만. 스킴(https://) · 상위 경로(..) · 공백을 모두 막는다

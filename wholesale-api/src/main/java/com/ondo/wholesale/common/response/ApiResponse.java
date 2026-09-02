@@ -8,7 +8,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * <p>{@code meta}는 페이징 있는 목록에만 담고, 그 외에는 필드 자체를 내보내지 않는다
  * (api-lite 00_공통 §1 — 단건·비페이징 목록은 {@code data}만).
  */
-public record ApiResponse<T>(T data, @JsonInclude(JsonInclude.Include.NON_NULL) PageMeta meta) {
+public record ApiResponse<T>(T data, @JsonInclude(JsonInclude.Include.NON_NULL) PageMeta meta)
+        implements ResponseEnvelope {
 
     public static <T> ApiResponse<T> of(T data) {
         return new ApiResponse<>(data, null);
