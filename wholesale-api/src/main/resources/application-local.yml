@@ -4,3 +4,8 @@ spring:
     url: jdbc:postgresql://localhost:5432/ondo_wholesale
     username: ondo
     password: ondo
+
+# 로컬 프론트 dev 서버(리액트, 3000)의 교차 출처 호출 허용 (MUL-86)
+ondo:
+  cors:
+    allowed-origins: http://localhost:3000
