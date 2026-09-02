@@ -15,7 +15,7 @@ public enum ErrorCode {
     VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "입력한 내용을 다시 확인해주세요"),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "로그인이 필요해요"),
     FORBIDDEN(HttpStatus.FORBIDDEN, "접근할 수 없어요"),
-    NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없어요"),
+    RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없어요"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "잠시 후 다시 시도해주세요"),
 
     // 인증 · 가입

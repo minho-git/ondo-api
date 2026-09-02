@@ -49,7 +49,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(NoResourceFoundException e) {
-        ErrorCode code = ErrorCode.NOT_FOUND;
+        ErrorCode code = ErrorCode.RESOURCE_NOT_FOUND;
         return ResponseEntity.status(code.status())
                 .body(ErrorResponse.of(code, traceId()));
     }
