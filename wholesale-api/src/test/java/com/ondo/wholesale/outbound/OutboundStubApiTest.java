@@ -45,4 +45,34 @@ class OutboundStubApiTest {
                 .andExpect(jsonPath("$.data[0].shippedAt").value((Object) null))
                 .andExpect(jsonPath("$.meta.totalElements").value(3));
     }
+
+    @Test
+    void 포장완료는_201로_PACKED_포장이_담긴_봉투를_내린다() throws Exception {
+        mvc.perform(post("/api/wholesale/outbounds")
+                        .with(TestSecuritySupport.approved())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"packingItemIds\": [91101] }"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.shippedAt").value((Object) null))
+                .andExpect(jsonPath("$.data.statementNumber").value((Object) null))
+                .andExpect(jsonPath("$.data.packings[0].status").value("PACKED"));
+    }
+
+    @Test
+    void 출고확정은_shippedAt과_장끼번호를_채워_상세를_내린다() throws Exception {
+        mvc.perform(post("/api/wholesale/outbounds/8801/ship").with(TestSecuritySupport.approved()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.shippedAt").isNotEmpty())
+                .andExpect(jsonPath("$.data.statementNumber").value(1))
+                .andExpect(jsonPath("$.data.isShippable").value(false));
+    }
+
+    @Test
+    void 장끼는_장끼번호와_출고일시를_항상_함께_내린다() throws Exception {
+        mvc.perform(get("/api/wholesale/outbounds/8801/statement").with(TestSecuritySupport.approved()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.statementNumber").value(1))
+                .andExpect(jsonPath("$.data.shippedAt").isNotEmpty())
+                .andExpect(jsonPath("$.data.items.length()").value(3));
+    }
 }

@@ -2,16 +2,25 @@ package com.ondo.wholesale.outbound;
 
 import com.ondo.wholesale.common.response.ApiResponse;
 import com.ondo.wholesale.order.ReceiveBy;
+import com.ondo.wholesale.outbound.dto.OutboundCreateRequest;
+import com.ondo.wholesale.outbound.dto.OutboundCreatedResponse;
+import com.ondo.wholesale.outbound.dto.OutboundDetailResponse;
 import com.ondo.wholesale.outbound.dto.OutboundRetailerResponse;
 import com.ondo.wholesale.outbound.dto.OutboundSummaryResponse;
 import com.ondo.wholesale.outbound.dto.PackingItemRowResponse;
 import com.ondo.wholesale.outbound.dto.PackingRetailerResponse;
+import com.ondo.wholesale.outbound.dto.StatementResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
@@ -89,5 +98,49 @@ public class OutboundController {
         return ApiResponse.paged(
                 OutboundStubExamples.outboundSummaries(),
                 new ApiResponse.PageMeta(0, 20, 3, 1));
+    }
+
+    @Operation(summary = "포장 완료 (봉투 생성)", description = """
+            체크한 SKU 행들을 한 봉투로 묶는다 — 재고는 아직 줄지 않는다(차감은 출고 확정).
+            전부 같은 소매처·같은 수령 방식이어야 하며, 한 포장의 일부만 담기면 포장이 분할된다
+            (대기열에 남는 쪽 id 유지, 나가는 쪽이 새 포장).
+
+            에러: 400 `INVARIANT_VIOLATED` · `DUPLICATE_PACKING_ITEM` · `RETAILER_MIXED` ·
+            `RECEIVE_BY_MIXED` / 404 `RESOURCE_NOT_FOUND` / 409 `PACKING_NOT_READY`""")
+    @PostMapping("/outbounds")
+    @ResponseStatus(HttpStatus.CREATED)
+    public OutboundCreatedResponse createOutbound(@RequestBody OutboundCreateRequest request) {
+        return OutboundStubExamples.createdOutbound();
+    }
+
+    @Operation(summary = "출고 상세 (포장 상세 패널)", description = """
+            `items`는 SKU 단위로 합친 목록, `packings`는 주문 역추적용.
+            `isShippable`은 버튼 활성 판정용이지 성공 보장이 아니다 — 재고 검증이 안 들어 있다.
+
+            에러: 404 `RESOURCE_NOT_FOUND`""")
+    @GetMapping("/outbounds/{outboundId}")
+    public OutboundDetailResponse outboundDetail(@PathVariable Long outboundId) {
+        return OutboundStubExamples.detailBeforeShip();
+    }
+
+    @Operation(summary = "출고 확정 — 재고가 실제로 줄어드는 유일한 지점", description = """
+            `shippedAt`과 장끼 번호(`statementNumber`, 날짜별 1부터)가 이 호출로 채워진다.
+            이후 봉투는 영구 동결 — 포장 해제도 안 된다. 응답은 출고 상세와 동일 스키마.
+
+            에러: 404 `RESOURCE_NOT_FOUND` / 409 `TRANSITION_NOT_ALLOWED` · `OUTBOUND_EMPTY` ·
+            `INSUFFICIENT_STOCK` · `INVARIANT_VIOLATED`""")
+    @PostMapping("/outbounds/{outboundId}/ship")
+    public OutboundDetailResponse ship(@PathVariable Long outboundId) {
+        return OutboundStubExamples.detailAfterShip();
+    }
+
+    @Operation(summary = "장끼 (거래명세서)", description = """
+            다운로드·인쇄의 원본 데이터 — 렌더·인쇄는 프론트(서버 PDF 없음). 금액 컬럼 없음.
+            장끼 번호는 날짜별 1부터라 `shippedAt`과 항상 함께 내려온다(표시 코드 조립용).
+
+            에러: 404 `RESOURCE_NOT_FOUND` (아직 출고 확정 전 포함)""")
+    @GetMapping("/outbounds/{outboundId}/statement")
+    public StatementResponse statement(@PathVariable Long outboundId) {
+        return OutboundStubExamples.statement();
     }
 }
