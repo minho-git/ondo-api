@@ -28,7 +28,14 @@ public enum ErrorCode {
     PASSWORD_POLICY_VIOLATED(HttpStatus.BAD_REQUEST,
             "비밀번호는 8~20자이며 영문·숫자·특수문자를 각각 1자 이상 포함해야 합니다."),
     REQUIRED_CONSENT_MISSING(HttpStatus.BAD_REQUEST, "필수 동의 항목이 누락되었습니다."),
-    REQUIRED_DOCUMENT_MISSING(HttpStatus.BAD_REQUEST, "필수 증빙 서류가 누락되었습니다.");
+    REQUIRED_DOCUMENT_MISSING(HttpStatus.BAD_REQUEST, "필수 증빙 서류가 누락되었습니다."),
+
+    // ── 로그인 (MUL-69) ──
+    // 이메일이 없는 것과 비밀번호가 틀린 것을 구분하지 않는다. 나눠서 알려주면 밖에서
+    // 이메일만 넣어보며 가입 여부를 확인할 수 있다(계정 열거). 그래서 실패는 이 하나뿐이다.
+    // UNAUTHENTICATED 도 401 이지만 그건 "세션이 없다"는 뜻이라 문구가 다르다 —
+    // 로그인 폼 밑에 "인증이 필요합니다."를 띄울 수는 없다.
+    LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다.");
 
     private final HttpStatus status;
     private final String defaultMessage;

@@ -15,5 +15,15 @@ spring:
   session:
     jdbc:
       table-name: wholesale.spring_session
+      initialize-schema: never   # 테이블은 Flyway 가 만든다. 스프링이 손대지 않는다
 server:
   port: 8081                  # 소매가 8080 이라 겹치지 않게
+  servlet:
+    session:
+      timeout: 2h             # 미확정(MUL-69). 인프라 협의 전까지 소매와 같은 값으로 둔다
+      cookie:
+        name: SESSION_WHOLESALE   # 배포하면 소매와 API 도메인을 같이 쓴다. 이름이 같으면 서로 덮어쓴다
+        http-only: true           # 자바스크립트가 못 읽는다. XSS 로 세션을 훔칠 수 없다
+        same-site: lax
+        secure: false             # 로컬은 http 다. 배포 프로필에서 true 로 덮는다
+        path: /
