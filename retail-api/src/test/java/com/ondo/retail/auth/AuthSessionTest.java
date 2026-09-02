@@ -52,7 +52,9 @@ class AuthSessionTest {
         assertThat(내정보.statusCode()).isEqualTo(200);
         assertThat(내정보.body()).contains("bombom@ondo.test");
 
-        assertThat(post("/api/retail/auth/logout", "", 세션).statusCode()).isEqualTo(200);
+        assertThat(post("/api/retail/auth/logout", "", 세션).statusCode())
+                .as("로그아웃은 본문 없이 204 다")
+                .isEqualTo(204);
         assertThat(get("/api/retail/auth/me", 세션).statusCode())
                 .as("로그아웃한 쿠키는 더 안 통한다")
                 .isEqualTo(401);

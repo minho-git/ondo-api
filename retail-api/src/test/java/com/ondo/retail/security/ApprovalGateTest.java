@@ -73,7 +73,7 @@ class ApprovalGateTest {
         String 쿠키 = login("pending@ondo.test");
 
         assertThat(get("/api/retail/auth/me", 쿠키).statusCode()).isEqualTo(200);
-        assertThat(post("/api/retail/auth/logout", 쿠키).statusCode()).isEqualTo(200);
+        assertThat(post("/api/retail/auth/logout", 쿠키).statusCode()).isEqualTo(204);
     }
 
     @Test
