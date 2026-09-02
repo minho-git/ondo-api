@@ -2,6 +2,7 @@ package com.ondo.wholesale.auth;
 
 import com.ondo.wholesale.auth.dto.SignupRequest;
 import com.ondo.wholesale.auth.dto.SignupResponse;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,14 @@ public class SignupController {
      * <p>응답을 {@code SignupResponse} 그대로 돌려주면 {@code ApiResponseBodyAdvice} 가
      * {@code data} 봉투를 씌운다. 여기서 직접 감싸면 봉투가 두 겹이 된다.
      */
+    @Operation(summary = "가입 신청 (심사 대기 생성)", description = """
+            계정·사업자 정보·증빙 서류·동의를 한 번에 받아 심사 대기(PENDING)로 만든다.
+            중간 저장 없음. 세션도 주지 않는다 — 다시 들어올 때는 로그인 → 상태 조회 경로.
+            필수 서류: BIZ_REG·CEO_ID / 필수 동의: TERMS·PRIVACY·INFO_CONFIRM.
+
+            에러: 400 `VALIDATION_FAILED`(형식) · `EMAIL_DUPLICATED` · `BIZ_REG_NO_DUPLICATED` ·
+            `PASSWORD_POLICY_VIOLATED`(8~20자·영문·숫자·특수문자) · `REQUIRED_CONSENT_MISSING` ·
+            `REQUIRED_DOCUMENT_MISSING`""")
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
     public SignupResponse signup(@Valid @RequestBody SignupRequest request) {

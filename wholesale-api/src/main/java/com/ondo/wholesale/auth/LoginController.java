@@ -3,6 +3,7 @@ package com.ondo.wholesale.auth;
 import com.ondo.wholesale.auth.dto.LoginRequest;
 import com.ondo.wholesale.auth.dto.LoginResponse;
 import com.ondo.wholesale.security.WholesalePrincipal;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -41,6 +42,12 @@ public class LoginController {
      * <p>{@link LoginResponse} 를 <b>그대로</b> 반환한다 — 봉투는
      * {@code ApiResponseBodyAdvice} 가 씌운다. 직접 감싸면 두 겹이 된다.
      */
+    @Operation(summary = "로그인 (세션 발급)", description = """
+            성공하면 세션이 생기고 `SESSION_WHOLESALE` 쿠키가 붙는다 — 토큰 필드는 없다.
+            미승인 계정도 200이다: 프론트는 `approvalStatus`(PENDING/APPROVED/REJECTED)를 보고
+            진입 화면을 고른다. 실패는 단일 코드 — 이메일 없음과 비밀번호 틀림을 구분하지 않는다(계정 열거 방지).
+
+            에러: 400 `VALIDATION_FAILED`(빈 값) / 401 `LOGIN_FAILED`""")
     @PostMapping("/login")
     public LoginResponse login(
             @Valid @RequestBody LoginRequest request,
@@ -59,6 +66,8 @@ public class LoginController {
      * {@code ApiResponseBodyAdvice} 가 끼어들 여지가 없고 본문이 0바이트로 나간다.
      * {@code ApiResponse.of(null)} 을 반환하면 200 에 {@code {"data":null}} 이 나가버린다.
      */
+    @Operation(summary = "로그아웃 (세션 무효화)", description = """
+            항상 204, 본문 없음. 세션이 없거나 만료된 쿠키로 눌러도 204 — 프론트가 따로 처리할 게 없다.""")
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void logout(HttpServletRequest httpRequest) {

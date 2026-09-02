@@ -1,6 +1,7 @@
 package com.ondo.wholesale.auth.dto;
 
 import com.ondo.wholesale.security.ApprovalStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.OffsetDateTime;
 
@@ -14,8 +15,8 @@ import java.time.OffsetDateTime;
  *                  (wholesaler 의 것이 아니다 — 재신청하면 라운드마다 갱신돼야 한다)
  */
 public record SignupResponse(
-        ApprovalStatus approvalStatus,
-        String bizName,
-        String bizRegNo,
+        @Schema(example = "PENDING") ApprovalStatus approvalStatus,
+        @Schema(example = "도도도매") String bizName,
+        @Schema(example = "1234567890") String bizRegNo,
         OffsetDateTime appliedAt) {
 }

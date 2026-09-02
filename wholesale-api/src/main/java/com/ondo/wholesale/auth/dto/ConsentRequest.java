@@ -1,6 +1,7 @@
 package com.ondo.wholesale.auth.dto;
 
 import com.ondo.wholesale.wholesaler.ConsentType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 
 /**
@@ -12,9 +13,11 @@ import jakarta.validation.constraints.NotNull;
  */
 public record ConsentRequest(
 
+        @Schema(example = "TERMS")
         @NotNull(message = "동의 항목을 지정해주세요.")
         ConsentType type,
 
+        @Schema(example = "true")
         @NotNull(message = "동의 여부를 보내주세요.")
         Boolean agreed) {
 }

@@ -1,5 +1,6 @@
 package com.ondo.wholesale.auth.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
 /**
@@ -17,9 +18,11 @@ import jakarta.validation.constraints.NotBlank;
  */
 public record LoginRequest(
 
+        @Schema(example = "owner@dodo.example")
         @NotBlank(message = "이메일을 입력해 주세요.")
         String email,
 
+        @Schema(example = "Ondo!2345")
         @NotBlank(message = "비밀번호를 입력해 주세요.")
         String password) {
 }
