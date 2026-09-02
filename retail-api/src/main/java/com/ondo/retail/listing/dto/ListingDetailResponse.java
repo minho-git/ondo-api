@@ -1,6 +1,7 @@
 package com.ondo.retail.listing.dto;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * 상품 상세. 색상 · 사이즈 · 판매가를 한 번에 내린다.
@@ -30,11 +31,14 @@ public record ListingDetailResponse(
     }
 
     /** 매장 위치를 같이 준다 — 방문 수령을 고를 수 있어서다. */
+    @Schema(name = "ListingWholesaler")
     public record Wholesaler(Long id, String name, String storeBuilding, String storeUnit) {
     }
 
     public record ColorOption(Color color, String imageUrl, List<Variant> variants) {
     }
+
+    @Schema(name = "ListingColor")
 
     public record Color(Long id, String name, String hex, String groupName) {
     }

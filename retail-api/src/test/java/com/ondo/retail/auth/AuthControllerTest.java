@@ -120,10 +120,10 @@ class AuthControllerTest {
     void 이메일_중복_확인() throws Exception {
         mvc.perform(get("/api/retail/auth/email-availability").param("email", "bombom@ondo.test"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.available").value(false));
+                .andExpect(jsonPath("$.data.isAvailable").value(false));
 
         mvc.perform(get("/api/retail/auth/email-availability").param("email", "아무도안쓴@ondo.test"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.available").value(true));
+                .andExpect(jsonPath("$.data.isAvailable").value(true));
     }
 }

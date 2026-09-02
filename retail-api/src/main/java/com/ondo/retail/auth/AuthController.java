@@ -3,6 +3,7 @@ package com.ondo.retail.auth;
 import com.ondo.retail.common.response.ApiResponse;
 import com.ondo.retail.retailer.RetailerRepository;
 import com.ondo.retail.retailer.domain.Retailer;
+import com.ondo.retail.auth.dto.EmailAvailabilityResponse;
 import com.ondo.retail.auth.dto.LoginRequest;
 import com.ondo.retail.auth.dto.RetailerResponse;
 import com.ondo.retail.auth.dto.SignUpRequest;
@@ -17,7 +18,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -85,8 +85,8 @@ public class AuthController {
 
     /** 가입 화면에서 이메일을 칠 때 부른다. */
     @GetMapping("/email-availability")
-    public ApiResponse<Map<String, Boolean>> emailAvailability(@RequestParam String email) {
-        return ApiResponse.of(Map.of("available", authService.isEmailAvailable(email)));
+    public ApiResponse<EmailAvailabilityResponse> emailAvailability(@RequestParam String email) {
+        return ApiResponse.of(new EmailAvailabilityResponse(authService.isEmailAvailable(email)));
     }
 
     /**

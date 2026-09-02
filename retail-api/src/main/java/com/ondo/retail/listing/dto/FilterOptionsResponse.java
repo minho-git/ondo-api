@@ -1,6 +1,7 @@
 package com.ondo.retail.listing.dto;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * 필터 사이드바를 그리는 값 전부.
@@ -17,6 +18,7 @@ public record FilterOptionsResponse(
     }
 
     /** @param id 목록의 {@code colorIds} 에 넣는 값 */
+    @Schema(name = "FilterColor")
     public record Color(Long id, String name, String hex) {
     }
 
