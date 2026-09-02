@@ -4,6 +4,8 @@ import com.ondo.retail.backorder.dto.BackorderResponse;
 import com.ondo.retail.common.error.BusinessException;
 import com.ondo.retail.common.error.ErrorCode;
 import com.ondo.retail.common.response.PageResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageImpl;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>미송 데이터는 도매 DB 에 있다. 소매는 도매 내부 API 로 가져와야 하는데 그게 아직
  * 없어서 목으로 모양만 낸다. 프론트가 화면을 잡을 수 있게 하려는 것이다.
  */
+@Tag(name = "미송", description = "주문했는데 아직 못 받은 것. 도매가 풀고 소매는 읽기만 한다.")
 @RestController
 @RequestMapping("/api/retail")
 @RequiredArgsConstructor
@@ -33,6 +36,8 @@ public class BackorderController {
      *
      * <p>오래된 순인 건 미송이 FIFO 로 풀리기 때문이다. 위에 있는 줄이 먼저 받는다.
      */
+    @Operation(summary = "미송 대기 현황",
+               description = "OPEN 인 것만 오래된 순으로. FIFO 로 풀린다.")
     @GetMapping("/backorders")
     public PageResponse<BackorderResponse> backorders(
             @RequestParam(defaultValue = "0") int page,

@@ -9,6 +9,8 @@ import com.ondo.retail.listing.dto.FilterOptionsResponse;
 import com.ondo.retail.listing.dto.ListingDetailResponse;
 import com.ondo.retail.listing.dto.ListingSearchCondition;
 import com.ondo.retail.listing.dto.ListingSummaryResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>데이터는 전부 도매 것이라 {@link ListingClient} 를 통해 가져온다.
  * 지금은 목이고, 내부 API 가 준비되면 구현체만 갈아끼운다.
  */
+@Tag(name = "상품", description = "도매 상품을 둘러본다. 도매 데이터라 지금은 목이다 — 응답 모양은 확정.")
 @RestController
 @RequestMapping("/api/retail")
 @RequiredArgsConstructor
@@ -41,6 +44,8 @@ public class ListingController {
      *
      * <p>게시 중(ON_SALE)인 상품만 나온다. 시즌 종료·삭제된 것은 목록에 없다.
      */
+    @Operation(summary = "상품 목록",
+               description = "검색 · 필터 · 정렬. 목록은 meta 가 붙는다.")
     @GetMapping("/listings")
     public PageResponse<ListingSummaryResponse> listings(
             @RequestParam(required = false) String q,
@@ -67,6 +72,8 @@ public class ListingController {
      * <p>없거나 · 게시되지 않았거나 · 삭제된 상품을 구분해 알려주지 않는다.
      * 도매가 시즌을 닫은 건지 원래 없는 건지 소매가 알 이유가 없다.
      */
+    @Operation(summary = "상품 상세",
+               description = "색상·사이즈 조합(SKU)과 사진이 함께 온다.")
     @GetMapping("/listings/{listingId}")
     public ApiResponse<ListingDetailResponse> listing(@PathVariable Long listingId) {
         return ApiResponse.of(listingClient.findById(listingId)
@@ -74,12 +81,16 @@ public class ListingController {
     }
 
     /** 좌측 네비의 3단 트리. 고정 마스터라 프론트에서 캐시해도 된다. */
+    @Operation(summary = "카테고리",
+               description = "필터 화면의 카테고리 트리.")
     @GetMapping("/categories")
     public ApiResponse<List<CategoryResponse>> categories() {
         return ApiResponse.of(listingClient.categories());
     }
 
     /** 필터 사이드바를 그리는 값. 목록과 따로 부른다 — 필터를 바꿔도 선택지는 안 바뀐다. */
+    @Operation(summary = "필터 항목",
+               description = "색상·사이즈·가격대 등 고를 수 있는 값 전부.")
     @GetMapping("/filter-options")
     public ApiResponse<FilterOptionsResponse> filterOptions() {
         return ApiResponse.of(listingClient.filterOptions());

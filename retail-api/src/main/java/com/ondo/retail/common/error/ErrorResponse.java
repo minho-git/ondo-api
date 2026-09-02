@@ -12,12 +12,18 @@ import java.util.List;
  * </ul>
  *
  * <pre>{ "code": "...", "message": "...", "traceId": null, "errors": [] }</pre>
+ *
+ * @param code    이걸로 분기한다. 대문자_스네이크
+ * @param message 화면에 그대로 써도 되는 문구
+ * @param traceId 문의가 들어왔을 때 로그를 찾는 값. 지금은 항상 null
+ * @param errors  필드 단위 검증 에러. 없으면 빈 배열
  */
 public record ErrorResponse(
         String code,
         String message,
         String traceId,
         List<FieldError> errors) {
+
 
     /**
      * 어느 입력칸이 왜 걸렸는지. 필드 단위 검증 에러가 있을 때만 찬다.

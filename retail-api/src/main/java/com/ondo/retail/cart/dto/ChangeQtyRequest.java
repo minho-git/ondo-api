@@ -3,7 +3,11 @@ package com.ondo.retail.cart.dto;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
-/** 수량 변경. 더하는 게 아니라 그 값으로 교체한다. */
+/**
+ * 수량 변경. 더하는 게 아니라 그 값으로 교체한다.
+ *
+ * @param qty 바꿀 수량. 더하는 게 아니라 이 값으로 교체한다
+ */
 public record ChangeQtyRequest(
 
         @NotNull(message = "수량을 입력해주세요")

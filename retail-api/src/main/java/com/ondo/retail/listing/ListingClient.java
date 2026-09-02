@@ -24,7 +24,9 @@ public interface ListingClient {
 
     Page<ListingSummaryResponse> search(ListingSearchCondition condition, Pageable pageable);
 
-    /** @return 없거나 · 게시되지 않았거나 · 삭제됐으면 비어 있다 */
+    /**
+     * @return 없거나 · 게시되지 않았거나 · 삭제됐으면 비어 있다
+     */
     java.util.Optional<ListingDetailResponse> findById(Long listingId);
 
     List<CategoryResponse> categories();

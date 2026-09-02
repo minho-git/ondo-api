@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
  * 장바구니 담기.
  *
  * @param variantId 상품 상세의 {@code colorOptions[].variants[].id}
+ * @param qty       담을 수량. 1 이상
  */
 public record AddCartItemRequest(
 

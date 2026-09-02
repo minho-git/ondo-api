@@ -4,6 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>On도마켓 소매 API</title>
+  <link rel="icon" href="data:,">
+  <style>
+    /* 본문 글꼴만 한글에 맞춰 바꾼다. 나머지는 Scalar 기본값을 쓴다. */
+    :root {
+      --scalar-font: "Pretendard", -apple-system, BlinkMacSystemFont,
+                     "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    }
+  </style>
 </head>
 <body>
   <!--
@@ -11,6 +19,25 @@
     OpenAPI 생성은 그대로고 화면만 바뀐 것이다.
   -->
   <script id="api-reference" data-url="/v3/api-docs"></script>
+  <script>
+    /*
+      hideModels        DTO 목록을 사이드바에서 뺀다. 엔드포인트에서 펼쳐 보면 되고,
+                        스키마가 64개라 안 빼면 목록이 그것들로 덮인다.
+      defaultOpenAllTags  다섯 그룹이라 다 펴두는 게 찾기 빠르다.
+      defaultHttpClient   프론트가 fetch 를 쓴다. 예제 코드가 바로 복사된다.
+      hideDownloadButton  false — 명세 파일을 받아서 타입 생성에 쓸 수 있게 둔다.
+    */
+    document.getElementById('api-reference').dataset.configuration = JSON.stringify({
+      theme: 'default',
+      layout: 'modern',
+      hideModels: true,
+      defaultOpenAllTags: true,
+      hideDownloadButton: false,
+      searchHotKey: 'k',
+      defaultHttpClient: { targetKey: 'js', clientKey: 'fetch' },
+      metaData: { title: 'On도마켓 소매 API' }
+    });
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
 </body>
 </html>
