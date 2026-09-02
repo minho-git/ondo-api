@@ -5,6 +5,8 @@ import com.ondo.retail.listing.dto.FilterOptionsResponse;
 import com.ondo.retail.listing.dto.ListingDetailResponse;
 import com.ondo.retail.listing.dto.ListingSearchCondition;
 import com.ondo.retail.listing.dto.ListingSummaryResponse;
+import com.ondo.retail.listing.dto.VariantInfo;
+import java.util.Map;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,4 +30,13 @@ public interface ListingClient {
     List<CategoryResponse> categories();
 
     FilterOptionsResponse filterOptions();
+
+    /**
+     * 옵션 여러 개를 한 번에 가져온다. 장바구니가 쓴다.
+     *
+     * <p>한 건씩 부르면 장바구니에 담긴 개수만큼 호출이 늘어난다. 묶어서 한 번에 받는다.
+     *
+     * @return 찾은 것만 담긴다. 지워진 옵션은 키가 없다
+     */
+    Map<Long, VariantInfo> findVariants(List<Long> variantIds);
 }

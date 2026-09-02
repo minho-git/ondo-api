@@ -23,7 +23,11 @@ public enum ErrorCode {
     ACCOUNT_NOT_APPROVED(HttpStatus.FORBIDDEN, "승인 후 이용할 수 있어요"),
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 가입된 이메일이에요"),
     FILE_TOO_LARGE(HttpStatus.CONTENT_TOO_LARGE, "파일은 10MB까지 올릴 수 있어요"),
-    UNSUPPORTED_FILE_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "jpg, png, pdf 파일만 올릴 수 있어요");
+    UNSUPPORTED_FILE_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "jpg, png, pdf 파일만 올릴 수 있어요"),
+
+    // 장바구니 · 주문
+    ORDER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "한 번에 담을 수 있는 수량을 넘었어요"),
+    LISTING_CLOSED(HttpStatus.CONFLICT, "판매가 끝난 상품이에요");
 
     private final HttpStatus status;
     private final String message;

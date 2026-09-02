@@ -33,6 +33,11 @@ public record ErrorResponse(
         return new ErrorResponse(code.name(), code.message(), traceId, List.of());
     }
 
+    /** 문구를 상황에 맞게 바꿔서 내려야 할 때. {@link ErrorCode} 의 기본 문구를 대신한다. */
+    public static ErrorResponse of(ErrorCode code, String message, String traceId) {
+        return new ErrorResponse(code.name(), message, traceId, List.of());
+    }
+
     public static ErrorResponse of(ErrorCode code, String traceId, List<FieldError> errors) {
         return new ErrorResponse(code.name(), code.message(), traceId,
                 errors == null ? List.of() : errors);

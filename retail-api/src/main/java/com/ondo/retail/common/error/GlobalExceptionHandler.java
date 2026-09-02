@@ -22,9 +22,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBusiness(BusinessException e) {
         ErrorCode code = e.errorCode();
-        log.warn("[{}] {}", code.name(), code.message());
+        log.warn("[{}] {}", code.name(), e.getMessage());
         return ResponseEntity.status(code.status())
-                .body(ErrorResponse.of(code, traceId()));
+                .body(ErrorResponse.of(code, e.getMessage(), traceId()));
     }
 
     /** @Valid 가 걸러낸 것. 어느 필드가 왜 걸렸는지 errors[] 에 담는다. */
