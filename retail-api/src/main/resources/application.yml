@@ -34,3 +34,19 @@ server:
         same-site: lax
         secure: false           # 로컬은 http 다. 배포 프로필에서 true 로 덮는다
         path: /
+
+# 헬스체크(MUL-76). ALB 가 30초마다 불러서 이 태스크에 트래픽을 보낼지 정한다
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health   # health 만 연다. 인터넷에 열리는 주소라 나머지는 닫아 둔다
+  endpoint:
+    health:
+      # liveness · readiness 주소가 따로 생긴다.
+      # ALB 는 liveness 를 보고, DB 상태는 health 로 본다.
+      # ALB 에 DB 를 물리면 DB 장애 때 ECS 가 태스크를 죽이고 다시 띄우는데,
+      # 새로 띄워도 DB 는 그대로라 재시작만 반복한다. 그걸 막으려고 가른다.
+      probes:
+        enabled: true
+      show-details: never   # {"status":"UP"} 만 나간다. DB 종류·디스크 용량이 새지 않게

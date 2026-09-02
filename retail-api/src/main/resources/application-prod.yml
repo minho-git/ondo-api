@@ -1,0 +1,15 @@
+# 배포용. 로컬(application-local.yml)과 달라지는 값만 여기 둔다.
+#
+# 비밀은 이 파일에 적지 않는다. ECS 태스크가 뜰 때 Secrets Manager 에서 받아
+# 환경변수로 넣어주고, 스프링이 ${} 자리에 끼운다. 이미지에도 코드에도 값이 없다.
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true   # 배포는 https 다. 이걸 안 켜면 쿠키가 http 로도 나간다

@@ -19,6 +19,8 @@ repositories {
 }
 
 dependencies {
+	// 헬스체크(MUL-76). ALB 가 30초마다 불러서 태스크가 살아있는지 본다
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-flyway'
 	implementation 'org.flywaydb:flyway-database-postgresql'
