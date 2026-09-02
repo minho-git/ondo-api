@@ -44,6 +44,8 @@ public class SecurityConfig {
                         // 로그아웃도 여기 포함된다. 세션이 없어도 204 로 조용히 끝나야 해서다 —
                         // 인증을 요구하면 만료된 쿠키로 로그아웃할 때 프론트가 401 을 따로 처리해야 한다.
                         .requestMatchers("/api/wholesale/auth/**").permitAll()
+                        // API 문서(MUL-81) — 로그인 전에 계약을 봐야 하는 프론트·소매 개발용
+                        .requestMatchers("/docs.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/wholesale/me").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/wholesale/me/reapply").authenticated()
                         .anyRequest().access(approvedAuthorizationManager))
