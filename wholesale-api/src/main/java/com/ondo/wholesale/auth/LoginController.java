@@ -3,6 +3,7 @@ package com.ondo.wholesale.auth;
 import com.ondo.wholesale.auth.dto.LoginRequest;
 import com.ondo.wholesale.auth.dto.LoginResponse;
 import com.ondo.wholesale.security.WholesalePrincipal;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 폼 파라미터만 읽는다), 성공 응답의 {@code data} 봉투와 {@code @Valid} 검증이
  * 필터 단계에선 동작하지 않아 둘 다 손으로 다시 만들어야 한다.
  */
+@Tag(name = "01 회원가입")
 @RestController
 @RequestMapping("/api/wholesale/auth")
 @RequiredArgsConstructor

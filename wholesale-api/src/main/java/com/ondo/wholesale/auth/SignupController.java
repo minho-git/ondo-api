@@ -2,6 +2,7 @@ package com.ondo.wholesale.auth;
 
 import com.ondo.wholesale.auth.dto.SignupRequest;
 import com.ondo.wholesale.auth.dto.SignupResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 이미 permitAll 로 열어뒀다. 세션도 주지 않는다. 가입 직후는 언제나 심사 대기라
  * 다시 들어올 때는 로그인 → 상태 조회 경로를 탄다.
  */
+@Tag(name = "01 회원가입")
 @RestController
 @RequestMapping("/api/wholesale/auth")
 @RequiredArgsConstructor
