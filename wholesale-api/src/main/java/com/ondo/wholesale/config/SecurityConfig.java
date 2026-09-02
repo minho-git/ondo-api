@@ -46,6 +46,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/wholesale/auth/**").permitAll()
                         // API 문서(MUL-81) — 로그인 전에 계약을 봐야 하는 프론트·소매 개발용
                         .requestMatchers("/docs.html", "/v3/api-docs/**").permitAll()
+                        // 헬스체크(MUL-76) — ALB 가 부른다. 401 이 나가면 배포가 영영 안 된다.
+                        // 하위까지 여는 건 ALB 가 실제로 보는 게 /actuator/health/liveness 여서다.
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         // 소매 접점(MUL-82) — 인증 주체가 소매 백엔드라 도매 세션 밖.
                         // 인증 축이 미확정(U-14-B2: 서비스 간 토큰 vs 소매 사용자 토큰 검증)이라
                         // 결정 전까지 잠정 permitAll. 결정되면 전용 필터/매니저로 교체한다.
