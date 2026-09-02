@@ -18,7 +18,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
  * <p>단건도 예외 없이 {@code { "data": ... }} 로 감싼다(요구 3). 아래는 감싸지 않는다:
  * <ul>
  *   <li>{@code null}(204 No Content) — 본문 없음</li>
- *   <li>이미 {@link ApiResponse} — 이중 봉투 금지</li>
+ *   <li>이미 {@link ResponseEnvelope} 구현체({@link ApiResponse} 포함) — 이중 봉투 금지</li>
  *   <li>{@link ProblemDetail} 및 에러 응답 — 에러는 data 봉투를 쓰지 않는다(요구 4)</li>
  *   <li>{@code byte[]}·{@link Resource} — 파일/바이너리</li>
  *   <li>{@code String} — {@link StringHttpMessageConverter} 선택 시 ApiResponse 를 String 으로
@@ -40,7 +40,7 @@ public class ApiResponseBodyAdvice implements ResponseBodyAdvice<Object> {
                                   Class<? extends HttpMessageConverter<?>> selectedConverterType,
                                   ServerHttpRequest request, ServerHttpResponse response) {
         if (body == null
-                || body instanceof ApiResponse<?>
+                || body instanceof ResponseEnvelope
                 || body instanceof ErrorResponse
                 || body instanceof ProblemDetail
                 || body instanceof byte[]
