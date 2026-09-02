@@ -63,7 +63,8 @@ public class ErrorResponseDocs {
     private void attach(Operation operation, String path) {
         ApiResponses responses = operation.getResponses();
 
-        put(responses, "400", "입력값이 규칙에 맞지 않는다. 필드 단위 검증이면 errors 에 담긴다", """
+        if (takesInput(operation)) {
+            put(responses, "400", "입력값이 규칙에 맞지 않는다. 필드 단위 검증이면 errors 에 담긴다", """
                 {
                   "code": "VALIDATION_FAILED",
                   "message": "입력한 내용을 다시 확인해주세요",
@@ -72,6 +73,7 @@ public class ErrorResponseDocs {
                     { "field": "email", "code": "NOT_BLANK", "message": "이메일을 입력해주세요" }
                   ]
                 }""");
+        }
 
         if (!PUBLIC_PATHS.contains(path)) {
             put(responses, "401", "로그인이 안 됐거나 세션이 만료됐다", """
@@ -84,6 +86,21 @@ public class ErrorResponseDocs {
 
         put(responses, "500", "서버 문제. 사용자에게 원인을 알려주지 않는다", """
                 { "code": "INTERNAL_ERROR", "message": "잠시 후 다시 시도해주세요", "traceId": null, "errors": [] }""");
+    }
+
+    /**
+     * 받는 값이 있나. <b>없으면 400 을 안 붙인다.</b>
+     *
+     * <p>400 은 "입력이 틀렸다" 는 뜻이라 입력이 있어야 성립한다. 로그아웃처럼 파라미터도
+     * 본문도 없는 자리는 틀릴 게 없어서 400 이 날 수가 없다. 실제로 모르는 쿼리를 붙여도
+     * 스프링이 그냥 무시하고 200 을 낸다.
+     *
+     * <p>없는 응답을 적어두면 프론트가 있지도 않은 분기를 만든다. 문서가 실제와 다르면
+     * 없느니만 못하다.
+     */
+    private static boolean takesInput(Operation operation) {
+        return operation.getRequestBody() != null
+                || (operation.getParameters() != null && !operation.getParameters().isEmpty());
     }
 
     /** 이미 문서에 적힌 상태코드는 건드리지 않는다. 개별 애노테이션이 항상 우선이다. */
