@@ -40,6 +40,18 @@ class OpenApiDocsTest extends PostgresTestSupport {
         assertThat(login200.isMissingNode()).as("로그인 경로가 스펙에 있어야 한다").isFalse();
         JsonNode loginSchema = login200.iterator().next().get("schema");
         assertThat(loginSchema.get("properties").has("data")).isTrue();
+
+        // 단건: 상품 상세도 { data: <상세 스키마> } 로 감싸졌는지
+        JsonNode detail200 = spec.at("/paths/~1api~1wholesale~1products~1{productId}/get/responses/200/content");
+        assertThat(detail200.isMissingNode()).as("상품 상세 경로가 스펙에 있어야 한다").isFalse();
+        JsonNode detailSchema = detail200.iterator().next().get("schema");
+        assertThat(detailSchema.get("properties").has("data")).isTrue();
+
+        // 페이징 목록: 컨트롤러가 ApiResponse 를 직접 반환 — 봉투를 이중으로 씌우지 않아야 한다
+        JsonNode list200 = spec.at("/paths/~1api~1wholesale~1products/get/responses/200/content");
+        JsonNode listSchema = list200.iterator().next().get("schema");
+        String ref = listSchema.has("$ref") ? listSchema.get("$ref").asText() : listSchema.toString();
+        assertThat(ref).contains("ApiResponse");
     }
 
     @Test
