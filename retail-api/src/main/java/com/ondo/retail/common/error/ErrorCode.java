@@ -16,6 +16,8 @@ public enum ErrorCode {
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "로그인이 필요해요"),
     FORBIDDEN(HttpStatus.FORBIDDEN, "접근할 수 없어요"),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없어요"),
+    METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "잘못된 요청이에요"),
+    UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "요청 형식이 올바르지 않아요"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "잠시 후 다시 시도해주세요"),
 
     // 인증 · 가입
