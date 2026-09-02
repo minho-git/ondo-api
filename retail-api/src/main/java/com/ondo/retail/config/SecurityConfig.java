@@ -31,7 +31,10 @@ public class SecurityConfig {
             "/api/retail/auth/sign-up",
             "/api/retail/auth/login",
             "/api/retail/auth/email-availability",
-            "/actuator/health"
+            // 헬스체크(MUL-76). ALB 가 부른다 — 401 이 나가면 배포가 영영 안 된다.
+            // 하위까지 여는 건 ALB 가 실제로 보는 게 /actuator/health/liveness 여서다.
+            "/actuator/health",
+            "/actuator/health/**"
     };
 
     /**
