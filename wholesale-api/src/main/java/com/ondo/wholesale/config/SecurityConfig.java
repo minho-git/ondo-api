@@ -6,6 +6,7 @@ import com.ondo.wholesale.security.RestAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -37,6 +38,9 @@ public class SecurityConfig {
         http
                 // CSRF: MUL-45 인프라 협의 대기(SameSite vs 토큰). 협의 후 별도 활성화 — TODO
                 .csrf(csrf -> csrf.disable())
+                // CORS(MUL-86): CorsConfig 의 소스를 쓴다. 인증 게이트보다 먼저 돌아야
+                // 프론트 dev 서버의 preflight(OPTIONS)가 401 로 튕기지 않는다
+                .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 // SecurityContext를 세션(→ Spring Session JDBC 테이블)에 저장/복원
                 .securityContext(context -> context.securityContextRepository(securityContextRepository))
