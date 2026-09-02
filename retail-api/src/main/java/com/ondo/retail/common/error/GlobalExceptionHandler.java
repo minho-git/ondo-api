@@ -4,10 +4,18 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 /**
  * 예외를 팀 규약 모양의 실패 응답으로 바꾼다.
@@ -22,9 +30,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBusiness(BusinessException e) {
         ErrorCode code = e.errorCode();
-        log.warn("[{}] {}", code.name(), code.message());
+        log.warn("[{}] {}", code.name(), e.getMessage());
         return ResponseEntity.status(code.status())
-                .body(ErrorResponse.of(code, traceId()));
+                .body(ErrorResponse.of(code, e.getMessage(), traceId()));
     }
 
     /** @Valid 가 걸러낸 것. 어느 필드가 왜 걸렸는지 errors[] 에 담는다. */
@@ -43,13 +51,73 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 요청이 잘못 온 것들. 전부 사용자 입력 문제라 400 이다.
+     *
+     * <p>이걸 안 잡으면 아래 catch-all 이 500 으로 내보낸다. 서버 잘못이 아닌데
+     * "잠시 후 다시 시도해주세요" 라고 하면 거짓말이 된다 — 다시 해도 똑같다.
+     *
+     * <ul>
+     *   <li>필수 파라미터 누락 — {@code ?cartItemIds=} 를 안 보냈다</li>
+     *   <li>타입 불일치 — {@code ?page=abc}</li>
+     *   <li>JSON 파싱 실패 — 본문이 깨졌거나 enum 값이 틀렸다</li>
+     *   <li>@PathVariable · @RequestParam 에 붙은 검증 실패</li>
+     * </ul>
+     */
+    @ExceptionHandler({
+            MissingServletRequestParameterException.class,
+            MethodArgumentTypeMismatchException.class,
+            HttpMessageNotReadableException.class,
+            HandlerMethodValidationException.class,
+            MissingServletRequestPartException.class})
+    public ResponseEntity<ErrorResponse> handleBadRequest(Exception e) {
+        ErrorCode code = ErrorCode.VALIDATION_FAILED;
+        log.warn("[{}] {}", code.name(), e.getMessage());
+        return ResponseEntity.status(code.status())
+                .body(ErrorResponse.of(code, traceId()));
+    }
+
+    /**
      * 없는 주소. 스프링이 정상적으로 던지는 것이라 서버 잘못이 아니다.
      * 아래 catch-all 보다 먼저 잡아야 500 으로 새지 않는다.
      */
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(NoResourceFoundException e) {
-        ErrorCode code = ErrorCode.NOT_FOUND;
+        ErrorCode code = ErrorCode.RESOURCE_NOT_FOUND;
+        return ResponseEntity.status(code.status())
+                .body(ErrorResponse.of(code, traceId()));
+    }
+
+    /**
+     * 못 받는 Content-Type. 멀티파트로 받는 가입 API 에 JSON 을 보내면 여기로 온다.
+     * 클라이언트가 형식을 틀린 것이라 415 다 — 서버 잘못이 아니다.
+     */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMediaType(HttpMediaTypeNotSupportedException e) {
+        ErrorCode code = ErrorCode.UNSUPPORTED_MEDIA_TYPE;
+        log.warn("[{}] {}", code.name(), e.getMessage());
+        return ResponseEntity.status(code.status())
+                .body(ErrorResponse.of(code, traceId()));
+    }
+
+    /** 있는 주소인데 메서드가 틀렸다. POST /login 을 GET 으로 부른 경우다. */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethod(HttpRequestMethodNotSupportedException e) {
+        ErrorCode code = ErrorCode.METHOD_NOT_ALLOWED;
+        log.warn("[{}] {}", code.name(), e.getMessage());
+        return ResponseEntity.status(code.status())
+                .body(ErrorResponse.of(code, traceId()));
+    }
+
+    /**
+     * 파일이 너무 크다. <b>톰캣이 컨트롤러보다 먼저 끊는다</b> — application.yml 의
+     * {@code max-file-size} 를 넘는 순간이라 AuthService 의 크기 검사까지 못 간다.
+     * 여기서 안 잡으면 같은 상황이 500 으로 나가서 "파일이 크다" 를 못 알려준다.
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleUploadSize(MaxUploadSizeExceededException e) {
+        ErrorCode code = ErrorCode.FILE_TOO_LARGE;
+        log.warn("[{}] {}", code.name(), e.getMessage());
         return ResponseEntity.status(code.status())
                 .body(ErrorResponse.of(code, traceId()));
     }

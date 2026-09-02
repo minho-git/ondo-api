@@ -17,6 +17,10 @@ spring:
       table-name: retail.spring_session
       initialize-schema: never   # 테이블은 Flyway 가 만든다. 스프링이 손대지 않는다
 
+springdoc:
+  swagger-ui:
+    enabled: false   # 화면은 Scalar 를 쓴다(/docs). JSON 생성만 springdoc 이 한다
+
 server:
   servlet:
     multipart:

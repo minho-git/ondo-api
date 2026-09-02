@@ -1,24 +1,23 @@
 package com.ondo.retail.auth;
 
-import com.ondo.retail.common.response.ApiResponse;
-import com.ondo.retail.retailer.RetailerRepository;
-import com.ondo.retail.retailer.domain.Retailer;
+import com.ondo.retail.auth.dto.EmailAvailabilityResponse;
 import com.ondo.retail.auth.dto.LoginRequest;
 import com.ondo.retail.auth.dto.RetailerResponse;
 import com.ondo.retail.auth.dto.SignUpRequest;
 import com.ondo.retail.auth.dto.SignUpResponse;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.multipart.MultipartFile;
+import com.ondo.retail.common.response.ApiResponse;
+import com.ondo.retail.retailer.RetailerRepository;
+import com.ondo.retail.retailer.domain.Retailer;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -29,8 +28,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+@Tag(name = "인증 · 가입", description = "회원가입 · 로그인 · 내 정보. 로그인하면 SESSION_RETAIL 쿠키가 붙는다.")
 @RestController
 @RequestMapping("/api/retail/auth")
 @RequiredArgsConstructor
@@ -44,6 +47,8 @@ public class AuthController {
      *
      * <p>세션을 주지 않는다. 가입 직후는 늘 PENDING 이라 로그인 화면으로 보내면 된다.
      */
+    @Operation(summary = "회원가입",
+               description = "멀티파트다. payload(JSON) 와 bizLicense(파일) 두 파트를 보낸다.")
     @PostMapping(value = "/sign-up", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<SignUpResponse> signUp(@RequestPart("payload") @Valid SignUpRequest payload,
@@ -56,27 +61,37 @@ public class AuthController {
      *
      * <p>승인 안 된 계정도 200 이다. 승인 여부는 다른 API 에서 따로 본다.
      */
+    @Operation(summary = "로그인",
+               description = "승인 안 된 계정도 200 이다. 승인 대기 화면을 봐야 하기 때문이다.")
     @PostMapping("/login")
     public ApiResponse<RetailerResponse> login(@RequestBody @Valid LoginRequest request,
                                                HttpServletRequest httpRequest,
                                                HttpServletResponse httpResponse) {
         Retailer retailer = authService.login(request);
         authenticate(retailer, httpRequest, httpResponse);
-        return ApiResponse.of(RetailerResponse.from(retailer));
+        return ApiResponse.of(authService.toResponse(retailer));
     }
 
-    /** 로그아웃. 세션을 지우면 DB 의 spring_session 행도 사라진다. */
+    /**
+     * 로그아웃. 세션을 지우면 DB 의 spring_session 행도 사라진다.
+     *
+     * <p>본문 없이 204 다. <b>세션이 이미 없어도 204</b> — 결과가 같으면 같은 응답을 낸다.
+     */
+    @Operation(summary = "로그아웃",
+               description = "세션을 지우고 쿠키를 만료시킨다. 본문 없이 204 다.")
     @PostMapping("/logout")
-    public ApiResponse<Void> logout(HttpServletRequest httpRequest) {
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(HttpServletRequest httpRequest) {
         HttpSession session = httpRequest.getSession(false);
         if (session != null) {
             session.invalidate();
         }
         SecurityContextHolder.clearContext();
-        return ApiResponse.of(null);
     }
 
     /** 내 정보. 승인 전에도 열려 있다 — 승인 대기 화면이 이걸로 상태를 본다. */
+    @Operation(summary = "내 정보",
+               description = "승인 대기·반려 상태도 여기서 본다. 미승인 계정도 부를 수 있다.")
     @GetMapping("/me")
     public ApiResponse<RetailerResponse> me(Authentication authentication) {
         Long retailerId = Long.valueOf(authentication.getName());
@@ -84,9 +99,11 @@ public class AuthController {
     }
 
     /** 가입 화면에서 이메일을 칠 때 부른다. */
+    @Operation(summary = "이메일 중복 확인",
+               description = "가입 폼에서 이메일 칸을 벗어날 때 부른다.")
     @GetMapping("/email-availability")
-    public ApiResponse<Map<String, Boolean>> emailAvailability(@RequestParam String email) {
-        return ApiResponse.of(Map.of("available", authService.isEmailAvailable(email)));
+    public ApiResponse<EmailAvailabilityResponse> emailAvailability(@RequestParam String email) {
+        return ApiResponse.of(new EmailAvailabilityResponse(authService.isEmailAvailable(email)));
     }
 
     /**

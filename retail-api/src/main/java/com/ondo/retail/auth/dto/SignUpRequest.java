@@ -13,6 +13,14 @@ import java.util.List;
  *
  * <p>로그인과 달리 이메일 형식을 검사한다. 가입은 값을 저장하는 자리라
  * 틀린 형식을 알려주는 게 맞고, 계정 존재 여부가 새지도 않는다.
+ *
+ * @param email       로그인 계정. 이미 가입돼 있으면 409 다
+ * @param password    8자 이상 64자까지
+ * @param shopName    상호. 화면에 보이는 이름이다
+ * @param ownerName   대표자명. 사업자등록증과 같아야 승인된다
+ * @param mobile      하이픈 없이 숫자만 10~11자리
+ * @param bizRegNo    사업자등록번호. 하이픈 없이 숫자 10자리
+ * @param agreedTerms 동의한 약관. 필수 약관이 빠지면 400 이다
  */
 public record SignUpRequest(
 

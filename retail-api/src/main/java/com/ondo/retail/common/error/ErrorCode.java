@@ -15,7 +15,9 @@ public enum ErrorCode {
     VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "입력한 내용을 다시 확인해주세요"),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "로그인이 필요해요"),
     FORBIDDEN(HttpStatus.FORBIDDEN, "접근할 수 없어요"),
-    NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없어요"),
+    RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없어요"),
+    METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "잘못된 요청이에요"),
+    UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "요청 형식이 올바르지 않아요"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "잠시 후 다시 시도해주세요"),
 
     // 인증 · 가입
@@ -23,7 +25,12 @@ public enum ErrorCode {
     ACCOUNT_NOT_APPROVED(HttpStatus.FORBIDDEN, "승인 후 이용할 수 있어요"),
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 가입된 이메일이에요"),
     FILE_TOO_LARGE(HttpStatus.CONTENT_TOO_LARGE, "파일은 10MB까지 올릴 수 있어요"),
-    UNSUPPORTED_FILE_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "jpg, png, pdf 파일만 올릴 수 있어요");
+    UNSUPPORTED_FILE_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "jpg, png, pdf 파일만 올릴 수 있어요"),
+
+    // 장바구니 · 주문
+    ORDER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "한 번에 담을 수 있는 수량을 넘었어요"),
+    UNORDERABLE_ITEM_INCLUDED(HttpStatus.BAD_REQUEST, "주문할 수 없는 상품이 있어요"),
+    LISTING_CLOSED(HttpStatus.CONFLICT, "판매가 끝난 상품이에요");
 
     private final HttpStatus status;
     private final String message;

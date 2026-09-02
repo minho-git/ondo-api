@@ -4,10 +4,12 @@ import com.ondo.retail.common.error.BusinessException;
 import com.ondo.retail.common.error.ErrorCode;
 import com.ondo.retail.auth.dto.SignUpRequest;
 import com.ondo.retail.auth.dto.SignUpResponse;
+import com.ondo.retail.retailer.ApprovalHistoryRepository;
 import com.ondo.retail.retailer.RetailerDocRepository;
 import com.ondo.retail.retailer.RetailerPrivateRepository;
 import com.ondo.retail.retailer.RetailerRepository;
 import com.ondo.retail.retailer.TermsAgreementRepository;
+import com.ondo.retail.retailer.domain.ApprovalStatus;
 import com.ondo.retail.retailer.domain.RetailerDoc;
 import com.ondo.retail.retailer.domain.RetailerPrivate;
 import com.ondo.retail.retailer.domain.TermsAgreement;
@@ -42,6 +44,7 @@ public class AuthService {
     private final RetailerPrivateRepository retailerPrivateRepository;
     private final TermsAgreementRepository termsAgreementRepository;
     private final RetailerDocRepository retailerDocRepository;
+    private final ApprovalHistoryRepository approvalHistoryRepository;
     private final PasswordEncoder passwordEncoder;
     private final FileStorage fileStorage;
 
@@ -119,7 +122,23 @@ public class AuthService {
     public RetailerResponse me(Long retailerId) {
         Retailer retailer = retailerRepository.findById(retailerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
-        return RetailerResponse.from(retailer);
+        return toResponse(retailer);
+    }
+
+    /**
+     * 로그인과 내 정보가 같은 응답을 쓴다. 거절된 계정이면 사유까지 붙인다.
+     *
+     * <p><b>거절일 때만 이력을 읽는다.</b> {@code /auth/me} 는 화면을 열 때마다 불리는 자리라
+     * 승인된 계정에까지 조회를 하나 더 붙이면 그게 계속 쌓인다.
+     */
+    public RetailerResponse toResponse(Retailer retailer) {
+        if (retailer.getApprovalStatus() != ApprovalStatus.REJECTED) {
+            return RetailerResponse.from(retailer);
+        }
+        return RetailerResponse.from(retailer,
+                approvalHistoryRepository
+                        .findTopByRetailerIdOrderByCreatedAtDesc(retailer.getId())
+                        .orElse(null));
     }
 
     public boolean isEmailAvailable(String email) {

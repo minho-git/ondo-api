@@ -26,6 +26,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-session-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
+	// 자바독을 그대로 API 문서 설명으로 쓴다. 주석과 문서가 따로 놀지 않게 하려는 것이다.
+	implementation 'com.github.therapi:therapi-runtime-javadoc:0.15.0'
+	annotationProcessor 'com.github.therapi:therapi-runtime-javadoc-scribe:0.15.0'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'

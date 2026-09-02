@@ -37,6 +37,51 @@ class AuthControllerTest {
     @Autowired MockMvc mvc;
 
     @Test
+    @DisplayName("승인된 계정은 rejection 이 null 이고 승인 시각이 있다")
+    void 승인된_계정() throws Exception {
+        mvc.perform(post("/api/retail/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON).content(LOGIN_BODY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.appliedAt").exists())
+                .andExpect(jsonPath("$.data.approvedAt").exists())
+                .andExpect(jsonPath("$.data.rejection").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("승인 대기 계정은 신청 시각만 있다 — 승인 시각도 거절 사유도 없다")
+    void 대기_계정() throws Exception {
+        mvc.perform(post("/api/retail/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"pending@ondo.test","password":"ondo1234!"}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.approvalStatus").value("PENDING"))
+                .andExpect(jsonPath("$.data.appliedAt").exists())
+                .andExpect(jsonPath("$.data.approvedAt").doesNotExist())
+                .andExpect(jsonPath("$.data.rejection").doesNotExist());
+    }
+
+    /**
+     * 승인 거절 화면이 이 응답 하나로 그려진다. 사유가 빠지면 화면이 못 그려지고,
+     * actor 에 운영자 이메일이 새면 안 된다 — 둘 다 여기서 잡는다.
+     */
+    @Test
+    @DisplayName("거절된 계정은 사유가 오고 actor 는 운영자 이메일이 아니라 \"운영자\" 다")
+    void 거절_계정() throws Exception {
+        mvc.perform(post("/api/retail/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"rejected@ondo.test","password":"ondo1234!"}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.approvalStatus").value("REJECTED"))
+                .andExpect(jsonPath("$.data.appliedAt").exists())
+                .andExpect(jsonPath("$.data.approvedAt").doesNotExist())
+                .andExpect(jsonPath("$.data.rejection.reason").isNotEmpty())
+                .andExpect(jsonPath("$.data.rejection.rejectedAt").exists())
+                .andExpect(jsonPath("$.data.rejection.actor").value("운영자"));
+    }
+
+    @Test
     @DisplayName("로그인하면 200 과 계정 정보가 온다")
     void 로그인() throws Exception {
         mvc.perform(post("/api/retail/auth/login")
@@ -120,10 +165,10 @@ class AuthControllerTest {
     void 이메일_중복_확인() throws Exception {
         mvc.perform(get("/api/retail/auth/email-availability").param("email", "bombom@ondo.test"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.available").value(false));
+                .andExpect(jsonPath("$.data.isAvailable").value(false));
 
         mvc.perform(get("/api/retail/auth/email-availability").param("email", "아무도안쓴@ondo.test"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.available").value(true));
+                .andExpect(jsonPath("$.data.isAvailable").value(true));
     }
 }
