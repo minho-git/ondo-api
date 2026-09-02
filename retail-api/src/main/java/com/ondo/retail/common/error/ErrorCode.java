@@ -29,6 +29,7 @@ public enum ErrorCode {
 
     // 장바구니 · 주문
     ORDER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "한 번에 담을 수 있는 수량을 넘었어요"),
+    UNORDERABLE_ITEM_INCLUDED(HttpStatus.BAD_REQUEST, "주문할 수 없는 상품이 있어요"),
     LISTING_CLOSED(HttpStatus.CONFLICT, "판매가 끝난 상품이에요");
 
     private final HttpStatus status;

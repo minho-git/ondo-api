@@ -4,6 +4,7 @@ import com.ondo.retail.cart.domain.CartItem;
 import com.ondo.retail.cart.dto.AddCartItemRequest;
 import com.ondo.retail.cart.dto.AddCartItemResponse;
 import com.ondo.retail.cart.dto.CartResponse;
+import com.ondo.retail.cart.dto.ChangeQtyResponse;
 import com.ondo.retail.common.error.BusinessException;
 import com.ondo.retail.common.error.ErrorCode;
 import com.ondo.retail.listing.ListingClient;
@@ -112,7 +113,7 @@ public class CartService {
 
     /** 수량 변경. 더하는 게 아니라 그 값으로 교체한다. */
     @Transactional
-    public void changeQty(Long retailerId, Long cartItemId, int qty) {
+    public ChangeQtyResponse changeQty(Long retailerId, Long cartItemId, int qty) {
         CartItem item = load(retailerId, cartItemId);
 
         VariantInfo variant = listingClient.findVariants(List.of(item.getVariantId()))
@@ -122,11 +123,29 @@ public class CartService {
         }
 
         item.changeQty(qty);
+
+        Integer salePrice = (variant == null) ? null : variant.salePrice();
+        return new ChangeQtyResponse(item.getId(), qty,
+                salePrice == null ? null : salePrice * qty);
     }
 
+    /**
+     * 장바구니에서 뺀다.
+     *
+     * <p><b>없는 id 여도 조용히 끝낸다.</b> 명세가 그렇다 — 결과가 같으면 같은 응답을 낸다.
+     * 연타로 두 번 눌러도 두 번째가 에러로 뜨면 안 된다.
+     *
+     * <p>다만 <b>남의 항목은 404</b> 다. 여기서 403 을 내면 "그 id 가 존재한다" 는 게
+     * 새어나간다. 그래서 없는 것과 남의 것을 여기서만 갈라 본다.
+     */
     @Transactional
     public void remove(Long retailerId, Long cartItemId) {
-        cartItemRepository.delete(load(retailerId, cartItemId));
+        cartItemRepository.findById(cartItemId).ifPresent(item -> {
+            if (!item.isOwnedBy(retailerId)) {
+                throw new BusinessException(ErrorCode.RESOURCE_NOT_FOUND);
+            }
+            cartItemRepository.delete(item);
+        });
     }
 
     public long count(Long retailerId) {
