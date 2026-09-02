@@ -117,6 +117,15 @@ public class Wholesaler {
     }
 
     /**
+     * 심사 승인. 지금은 로컬 시드({@code LocalDevAccountSeeder})만 쓰지만,
+     * 심사 승인 처리(MUL-70/71)가 들어오면 같은 메서드를 탄다.
+     * approved_at 컬럼은 아직 미매핑이라 그 티켓에서 함께 확장한다.
+     */
+    public void approve() {
+        this.approvalStatus = ApprovalStatus.APPROVED;
+    }
+
+    /**
      * 동의 한 건을 붙인다. 양쪽 참조를 함께 세운다 —
      * 자식의 wholesaler 가 비어 있으면 wholesaler_id 가 NULL 로 나가 INSERT 가 깨진다.
      */
