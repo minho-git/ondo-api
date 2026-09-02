@@ -18,7 +18,9 @@ import jakarta.validation.constraints.NotBlank;
  */
 public record LoginRequest(
 
-        @Schema(example = "owner@dodo.example")
+        // example 은 로컬 시드 계정(LocalDevAccountSeeder)과 같은 값이다 —
+        // 문서의 Test Request 를 수정 없이 눌러도 로컬에서 그대로 로그인된다
+        @Schema(example = "dev@ondo.test")
         @NotBlank(message = "이메일을 입력해 주세요.")
         String email,
 
