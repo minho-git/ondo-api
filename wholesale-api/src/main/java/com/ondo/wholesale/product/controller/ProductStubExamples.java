@@ -1,8 +1,8 @@
-package com.ondo.wholesale.product;
+package com.ondo.wholesale.product.controller;
 
-import com.ondo.wholesale.product.dto.CategoryNodeResponse;
+import com.ondo.wholesale.product.domain.ListingStatus;
+import com.ondo.wholesale.product.domain.Size;
 import com.ondo.wholesale.product.dto.CategoryPathItem;
-import com.ondo.wholesale.product.dto.ColorGroupResponse;
 import com.ondo.wholesale.product.dto.ColorOptionResponse;
 import com.ondo.wholesale.product.dto.ColorResponse;
 import com.ondo.wholesale.product.dto.ListingImageResponse;
@@ -32,7 +32,7 @@ final class ProductStubExamples {
                 90231L, 1, Size.XS, 33, 0, 2, 33,
                 new BigDecimal("15200.00"), 29000, 100);
         ColorOptionResponse black = new ColorOptionResponse(
-                new ColorResponse(1L, "블랙", "#111111", "무채색"), List.of(variant));
+                new ColorResponse(1L, "블랙", "#191F28", "무채색"), List.of(variant));
         return new ProductDetailResponse(
                 5012L, 18, "오버핏 코튼 티셔츠", categoryPath(), List.of(black), listing(ListingStatus.ON_SALE));
     }
@@ -54,22 +54,10 @@ final class ProductStubExamples {
                 List.of(new ListingImageResponse(8801L, "https://cdn.ondo.example/listings/4410/1.jpg", 0)));
     }
 
-    static List<ColorGroupResponse> colorPalette() {
-        return List.of(new ColorGroupResponse(1L, "무채색", List.of(
-                new ColorGroupResponse.ColorItem(1L, "블랙", "#111111"),
-                new ColorGroupResponse.ColorItem(2L, "화이트", "#FFFFFF"))));
-    }
-
-    static List<CategoryNodeResponse> categoryTree() {
-        CategoryNodeResponse leaf = new CategoryNodeResponse(312L, "상의", 3, List.of());
-        CategoryNodeResponse mid = new CategoryNodeResponse(12L, "의류", 2, List.of(leaf));
-        return List.of(new CategoryNodeResponse(1L, "여성", 1, List.of(mid)));
-    }
-
     private static List<CategoryPathItem> categoryPath() {
         return List.of(
                 new CategoryPathItem(1L, "여성"),
-                new CategoryPathItem(12L, "의류"),
-                new CategoryPathItem(312L, "상의"));
+                new CategoryPathItem(12L, "상의"),
+                new CategoryPathItem(121L, "티셔츠"));
     }
 }

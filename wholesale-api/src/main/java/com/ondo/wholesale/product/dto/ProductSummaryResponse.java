@@ -1,6 +1,6 @@
 package com.ondo.wholesale.product.dto;
 
-import com.ondo.wholesale.product.ListingStatus;
+import com.ondo.wholesale.product.domain.ListingStatus;
 
 import java.util.List;
 

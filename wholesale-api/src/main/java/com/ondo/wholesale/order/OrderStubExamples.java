@@ -8,7 +8,7 @@ import com.ondo.wholesale.order.dto.OrderSummaryResponse;
 import com.ondo.wholesale.order.dto.PackingCreatedResponse;
 import com.ondo.wholesale.order.dto.PackingItemResponse;
 import com.ondo.wholesale.order.dto.PackingQueueItemResponse;
-import com.ondo.wholesale.product.Size;
+import com.ondo.wholesale.product.domain.Size;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;

@@ -1,4 +1,4 @@
-package com.ondo.wholesale.product;
+package com.ondo.wholesale.product.controller;
 
 import com.ondo.wholesale.common.response.ApiResponse;
 import com.ondo.wholesale.product.dto.ProductCreateRequest;

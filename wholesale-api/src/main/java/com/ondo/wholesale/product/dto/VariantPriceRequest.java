@@ -1,6 +1,6 @@
 package com.ondo.wholesale.product.dto;
 
-import com.ondo.wholesale.product.Size;
+import com.ondo.wholesale.product.domain.Size;
 
 /**
  * variant 하나의 판매가·주문 제한.

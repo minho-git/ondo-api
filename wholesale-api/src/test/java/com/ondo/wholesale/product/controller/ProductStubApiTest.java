@@ -1,4 +1,4 @@
-package com.ondo.wholesale.product;
+package com.ondo.wholesale.product.controller;
 
 import com.ondo.wholesale.common.error.ErrorResponseWriter;
 import com.ondo.wholesale.common.response.ApiResponseBodyAdvice;
@@ -25,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 상품 계약 스텁 대표 응답 검증 (MUL-81). example 값 전수 검증이 아니라
  * "봉투·페이징 meta·계약 핵심 필드가 계약서 형태로 나가는지"만 본다.
  */
-@WebMvcTest({ProductController.class, ListingController.class, ColorController.class, CategoryController.class})
+@WebMvcTest({ProductController.class, ListingController.class})
 @Import({SecurityConfig.class, RestAuthenticationEntryPoint.class, RestAccessDeniedHandler.class,
         ApprovedAuthorizationManager.class, ErrorResponseWriter.class, ApiResponseBodyAdvice.class,
         TraceIdFilter.class})

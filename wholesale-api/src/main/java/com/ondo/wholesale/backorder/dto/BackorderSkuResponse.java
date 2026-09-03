@@ -1,6 +1,6 @@
 package com.ondo.wholesale.backorder.dto;
 
-import com.ondo.wholesale.product.Size;
+import com.ondo.wholesale.product.domain.Size;
 
 import java.time.LocalDate;
 
