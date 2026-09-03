@@ -19,3 +19,35 @@ output "api_dev_certificate_arn" {
   description = "개발 환경 ALB HTTPS 리스너에 붙일 인증서"
   value       = aws_acm_certificate.api_dev.arn
 }
+
+# ── C 단계(ECS)에서 쓸 값들 ──────────────────────────────────
+
+output "retail_db_endpoint" {
+  description = "소매 DB 주소. ECS 태스크의 DB_URL 에 들어간다"
+  value       = aws_db_instance.retail.endpoint
+}
+
+output "wholesale_db_endpoint" {
+  description = "도매 DB 주소"
+  value       = aws_db_instance.wholesale.endpoint
+}
+
+output "retail_db_secret_arn" {
+  description = "소매 DB 비밀번호. RDS 가 만들어 넣은 시크릿 — ECS 가 이걸 읽어 환경변수로 넣는다"
+  value       = aws_db_instance.retail.master_user_secret[0].secret_arn
+}
+
+output "wholesale_db_secret_arn" {
+  description = "도매 DB 비밀번호"
+  value       = aws_db_instance.wholesale.master_user_secret[0].secret_arn
+}
+
+output "api_dev_url" {
+  description = "개발 환경 API 주소"
+  value       = "https://${aws_route53_record.api_dev.name}"
+}
+
+output "alb_dns_name" {
+  description = "ALB 기본 주소. DNS 전파 전에 확인할 때 쓴다"
+  value       = aws_lb.external.dns_name
+}
