@@ -1,5 +1,7 @@
 package com.ondo.wholesale.product;
 
+import com.ondo.wholesale.product.domain.ListingStatus;
+import com.ondo.wholesale.product.domain.Size;
 import com.ondo.wholesale.product.dto.CategoryNodeResponse;
 import com.ondo.wholesale.product.dto.CategoryPathItem;
 import com.ondo.wholesale.product.dto.ColorGroupResponse;

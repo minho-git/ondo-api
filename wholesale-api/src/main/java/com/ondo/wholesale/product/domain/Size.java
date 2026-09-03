@@ -1,4 +1,4 @@
-package com.ondo.wholesale.product;
+package com.ondo.wholesale.product.domain;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
@@ -20,5 +20,15 @@ public enum Size {
     @JsonValue
     public String label() {
         return label;
+    }
+
+    /** DB 라벨('2XL' 등) → 상수. {@link SizeConverter} 가 쓴다. */
+    public static Size fromLabel(String label) {
+        for (Size size : values()) {
+            if (size.label.equals(label)) {
+                return size;
+            }
+        }
+        throw new IllegalArgumentException("알 수 없는 사이즈: " + label);
     }
 }

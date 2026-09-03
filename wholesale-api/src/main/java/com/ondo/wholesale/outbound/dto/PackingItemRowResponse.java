@@ -1,7 +1,7 @@
 package com.ondo.wholesale.outbound.dto;
 
 import com.ondo.wholesale.order.ReceiveBy;
-import com.ondo.wholesale.product.Size;
+import com.ondo.wholesale.product.domain.Size;
 
 import java.time.OffsetDateTime;
 

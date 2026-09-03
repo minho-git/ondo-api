@@ -1,7 +1,7 @@
 package com.ondo.wholesale.product.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.ondo.wholesale.product.ListingStatus;
+import com.ondo.wholesale.product.domain.ListingStatus;
 
 import java.time.OffsetDateTime;
 import java.util.List;

@@ -11,7 +11,7 @@ import com.ondo.wholesale.outbound.dto.OutboundSummaryResponse;
 import com.ondo.wholesale.outbound.dto.PackingItemRowResponse;
 import com.ondo.wholesale.outbound.dto.PackingRetailerResponse;
 import com.ondo.wholesale.outbound.dto.StatementResponse;
-import com.ondo.wholesale.product.Size;
+import com.ondo.wholesale.product.domain.Size;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;

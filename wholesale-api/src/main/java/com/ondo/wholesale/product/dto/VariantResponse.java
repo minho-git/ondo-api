@@ -1,6 +1,6 @@
 package com.ondo.wholesale.product.dto;
 
-import com.ondo.wholesale.product.Size;
+import com.ondo.wholesale.product.domain.Size;
 
 import java.math.BigDecimal;
 

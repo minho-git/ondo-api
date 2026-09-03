@@ -1,6 +1,6 @@
 package com.ondo.wholesale.order.dto;
 
-import com.ondo.wholesale.product.Size;
+import com.ondo.wholesale.product.domain.Size;
 
 /**
  * 주문 라인 하나. 수량 필드의 스코프에 주의 — 접두사 없는 값은 이 라인의 것이고,
