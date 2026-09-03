@@ -1,6 +1,9 @@
 package com.ondo.wholesale.product.dto;
 
 import com.ondo.wholesale.product.domain.Size;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * variant 하나의 판매가·주문 제한.
@@ -9,4 +12,25 @@ import com.ondo.wholesale.product.domain.Size;
  * 아직 id 가 없는 신규 variant 는 {@code (colorId, size)}. 등록(POST)은 전부 신규라
  * 항상 후자다. 둘 다 채우거나 둘 다 비우면 400 (PATCH 계약서).
  */
-public record VariantPriceRequest(Long variantId, Long colorId, Size size, Integer salePrice, Integer orderLimit) {}
+public record VariantPriceRequest(
+        @Schema(example = "null", description = "기존 variant 지정용 (PATCH)")
+        Long variantId,
+
+        @Schema(example = "1")
+        Long colorId,
+
+        @Schema(example = "S")
+        Size size,
+
+        @Schema(example = "29000")
+        @NotNull @Min(0)
+        Integer salePrice,
+
+        @Schema(example = "0", description = "1회 주문당 최대 장수. 0 = 무제한")
+        @Min(0)
+        Integer orderLimit
+) {
+    public VariantPriceRequest {
+        orderLimit = (orderLimit == null) ? 0 : orderLimit;
+    }
+}

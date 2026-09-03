@@ -30,6 +30,16 @@ public enum ErrorCode {
     REQUIRED_CONSENT_MISSING(HttpStatus.BAD_REQUEST, "필수 동의 항목이 누락되었습니다."),
     REQUIRED_DOCUMENT_MISSING(HttpStatus.BAD_REQUEST, "필수 증빙 서류가 누락되었습니다."),
 
+    // ── 상품 (MUL-91) ──
+    // 화면이 항목별로 다르게 안내해야 하는 정책 위반들. 형식 위반은 VALIDATION_FAILED.
+    CATEGORY_NOT_FOUND(HttpStatus.BAD_REQUEST, "존재하지 않는 카테고리입니다."),
+    CATEGORY_NOT_LEAF(HttpStatus.BAD_REQUEST, "상품에는 소분류(리프) 카테고리만 지정할 수 있습니다."),
+    COLOR_DUPLICATED(HttpStatus.BAD_REQUEST, "같은 색상을 두 번 넣을 수 없습니다."),
+    SIZE_DUPLICATED(HttpStatus.BAD_REQUEST, "한 색상에 같은 사이즈를 두 번 넣을 수 없습니다."),
+    OPTION_REQUIRED(HttpStatus.BAD_REQUEST, "색상 옵션과 사이즈는 1개 이상이어야 합니다."),
+    PRICE_REQUIRED(HttpStatus.BAD_REQUEST, "게시하려면 모든 옵션의 판매가가 필요합니다."),
+    INVARIANT_VIOLATED(HttpStatus.BAD_REQUEST, "요청이 상품 구성과 맞지 않습니다."),
+
     // ── 로그인 (MUL-69) ──
     // 이메일이 없는 것과 비밀번호가 틀린 것을 구분하지 않는다. 나눠서 알려주면 밖에서
     // 이메일만 넣어보며 가입 여부를 확인할 수 있다(계정 열거). 그래서 실패는 이 하나뿐이다.
