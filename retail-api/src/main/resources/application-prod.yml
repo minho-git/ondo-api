@@ -13,3 +13,9 @@ server:
     session:
       cookie:
         secure: true   # 배포는 https 다. 이걸 안 켜면 쿠키가 http 로도 나간다
+
+# 소매 화면의 교차 출처 호출 허용 (MUL-85).
+# 로컬(localhost:3001)은 여기 없다 — 프로필이 갈려서 배포엔 안 들어간다.
+ondo:
+  cors:
+    allowed-origins: https://ddmondo.co.kr

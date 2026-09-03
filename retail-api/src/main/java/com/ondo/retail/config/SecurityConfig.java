@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -78,6 +79,11 @@ public class SecurityConfig {
                                            ApprovedAuthorizationManager approvedAuthorizationManager) throws Exception {
         http
                 .securityContext(context -> context.securityContextRepository(securityContextRepository))
+
+                // CORS(MUL-85). CorsConfig 의 소스를 쓴다. 인증 게이트보다 먼저 돌아야
+                // 브라우저가 먼저 보내는 preflight(OPTIONS)가 401 로 튕기지 않는다 —
+                // 그 요청엔 로그인 정보가 없어서 아래 규칙에 걸리면 본 요청이 시작도 못 한다.
+                .cors(Customizer.withDefaults())
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_PATHS).permitAll()
