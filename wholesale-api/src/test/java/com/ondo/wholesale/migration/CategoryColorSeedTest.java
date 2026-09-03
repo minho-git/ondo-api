@@ -86,10 +86,13 @@ class CategoryColorSeedTest extends PostgresTestSupport {
 
         Long groupId = jdbc.queryForObject(
                 "insert into common.color_group (name) values ('채번검사') returning id", Long.class);
+        assertThat(groupId).isGreaterThan(jdbc.queryForObject(
+                "select max(id) from common.color_group where id <> ?", Long.class, groupId));
+
         Long colorId = jdbc.queryForObject(
                 "insert into common.color (group_id, name) values (?, '채번검사') returning id",
                 Long.class, groupId);
-        assertThat(groupId).isGreaterThan(0L);
-        assertThat(colorId).isGreaterThan(0L);
+        assertThat(colorId).isGreaterThan(jdbc.queryForObject(
+                "select max(id) from common.color where id <> ?", Long.class, colorId));
     }
 }

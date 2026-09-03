@@ -78,8 +78,6 @@ public class Variant {
         this.product = product;
         this.size = size;
         this.variantSeq = variantSeq;
-        this.stockQty = 0;
-        this.reservedQty = 0;
         this.avgCost = BigDecimal.ZERO;
     }
 

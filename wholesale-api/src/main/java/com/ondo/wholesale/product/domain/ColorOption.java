@@ -45,9 +45,6 @@ public class ColorOption {
     @JoinColumn(name = "color_id", nullable = false, updatable = false)
     private Color color;
 
-    @Column(name = "image_url", length = 500)
-    private String imageUrl;
-
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;

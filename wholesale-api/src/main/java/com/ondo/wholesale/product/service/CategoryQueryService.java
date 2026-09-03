@@ -1,4 +1,4 @@
-package com.ondo.wholesale.product;
+package com.ondo.wholesale.product.service;
 
 import com.ondo.wholesale.product.domain.Category;
 import com.ondo.wholesale.product.dto.CategoryNodeResponse;
@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -24,27 +23,21 @@ public class CategoryQueryService {
     private final CategoryRepository categoryRepository;
 
     public List<CategoryNodeResponse> tree() {
-        List<Category> all = categoryRepository.findAll().stream()
-                .filter(Category::isActive)
-                .toList();
+        // 쿼리가 sort_order, id 로 전역 정렬해 주므로 groupingBy(encounter order 보존)만 하면 된다
+        List<Category> all = categoryRepository.findByActiveTrueOrderBySortOrderAscIdAsc();
         Map<Long, List<Category>> byParent = all.stream()
                 .filter(c -> c.getParentId() != null)
                 .collect(Collectors.groupingBy(Category::getParentId));
         return all.stream()
                 .filter(c -> c.getParentId() == null)
-                .sorted(ORDER)
                 .map(c -> toNode(c, byParent))
                 .toList();
     }
 
     private CategoryNodeResponse toNode(Category category, Map<Long, List<Category>> byParent) {
         List<CategoryNodeResponse> children = byParent.getOrDefault(category.getId(), List.of()).stream()
-                .sorted(ORDER)
                 .map(c -> toNode(c, byParent))
                 .toList();
         return new CategoryNodeResponse(category.getId(), category.getName(), category.getDepth(), children);
     }
-
-    private static final Comparator<Category> ORDER =
-            Comparator.comparingInt(Category::getSortOrder).thenComparing(Category::getId);
 }

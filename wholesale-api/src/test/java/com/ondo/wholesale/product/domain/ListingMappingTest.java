@@ -3,6 +3,8 @@ package com.ondo.wholesale.product.domain;
 import com.ondo.wholesale.product.repository.ListingRepository;
 import com.ondo.wholesale.product.repository.ListingVariantRepository;
 import com.ondo.wholesale.product.repository.ProductRepository;
+import com.ondo.wholesale.support.MasterDataFixture;
+import com.ondo.wholesale.support.MasterDataFixture;
 import com.ondo.wholesale.support.PostgresTestSupport;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,21 +49,15 @@ class ListingMappingTest extends PostgresTestSupport {
 
     @BeforeEach
     void 상품을_심는다() {
-        long wholesalerId = jdbc.queryForObject("""
-                insert into wholesale.wholesaler (email, password_hash, biz_reg_no, biz_name, biz_owner_name)
-                values ('listing@ondo.test', 'x', '9200000001', '테스트도매', '김테스트') returning id
-                """, Long.class);
-        jdbc.update("insert into common.category (id, parent_id, name, depth) values (9201, null, '여성', 1)");
-        jdbc.update("insert into common.category (id, parent_id, name, depth) values (9202, 9201, '의류', 2)");
-        jdbc.update("insert into common.category (id, parent_id, name, depth) values (9203, 9202, '상의', 3)");
-        jdbc.update("insert into common.color_group (id, name) values (9200, '무채색')");
-        jdbc.update("insert into common.color (id, group_id, name) values (9210, 9200, '블랙')");
+        long wholesalerId = MasterDataFixture.도매처를_넣는다(jdbc, "listing@ondo.test", "9200000001");
+        long leafCategoryId = MasterDataFixture.카테고리_리프를_넣는다(jdbc, 9201);
+        long blackId = MasterDataFixture.색상을_넣는다(jdbc, 9200, 9210);
 
         product = Product.builder()
                 .wholesalerId(wholesalerId).productNumber(1)
-                .name("오버핏 코튼 티셔츠").categoryId(9203L)
+                .name("오버핏 코튼 티셔츠").categoryId(leafCategoryId)
                 .build();
-        variant = product.addColorOption(em.find(Color.class, 9210L))
+        variant = product.addColorOption(em.find(Color.class, blackId))
                 .addVariant(Size.S, product.nextVariantSeq());
         productRepository.save(product);
         em.flush();

@@ -1,6 +1,7 @@
-package com.ondo.wholesale.product;
+package com.ondo.wholesale.product.controller;
 
 import com.ondo.wholesale.product.dto.CategoryNodeResponse;
+import com.ondo.wholesale.product.service.CategoryQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.tags.Tag;

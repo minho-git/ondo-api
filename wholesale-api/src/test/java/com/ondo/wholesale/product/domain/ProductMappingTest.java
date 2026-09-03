@@ -1,6 +1,8 @@
 package com.ondo.wholesale.product.domain;
 
 import com.ondo.wholesale.product.repository.ProductRepository;
+import com.ondo.wholesale.support.MasterDataFixture;
+import com.ondo.wholesale.support.MasterDataFixture;
 import com.ondo.wholesale.support.PostgresTestSupport;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,16 +40,13 @@ class ProductMappingTest extends PostgresTestSupport {
     private long wholesalerId;
     private Color black;
 
+    private long leafCategoryId;
+
     @BeforeEach
     void 마스터를_심는다() {
-        wholesalerId = 도매처를_넣는다("mapping@ondo.test", "9100000001");
-        // 시드(V5)와 겹치지 않게 큰 id 를 쓴다
-        jdbc.update("insert into common.category (id, parent_id, name, depth) values (9101, null, '여성', 1)");
-        jdbc.update("insert into common.category (id, parent_id, name, depth) values (9102, 9101, '의류', 2)");
-        jdbc.update("insert into common.category (id, parent_id, name, depth) values (9103, 9102, '상의', 3)");
-        jdbc.update("insert into common.color_group (id, name, sort_order) values (9100, '무채색', 0)");
-        jdbc.update("insert into common.color (id, group_id, name, hex, sort_order) values (9110, 9100, '블랙', '#111111', 0)");
-        black = em.find(Color.class, 9110L);
+        wholesalerId = MasterDataFixture.도매처를_넣는다(jdbc, "mapping@ondo.test", "9100000001");
+        leafCategoryId = MasterDataFixture.카테고리_리프를_넣는다(jdbc, 9101);
+        black = em.find(Color.class, MasterDataFixture.색상을_넣는다(jdbc, 9100, 9110));
     }
 
     @Test
@@ -124,7 +123,7 @@ class ProductMappingTest extends PostgresTestSupport {
         Variant variant = saved.getColorOptions().get(0).getVariants().get(0);
 
         assertThat(saved.getName()).isEqualTo("오버핏 코튼 티셔츠");
-        assertThat(saved.getCategoryId()).isEqualTo(9103L);
+        assertThat(saved.getCategoryId()).isEqualTo(leafCategoryId);
         assertThat(saved.getProductNumber()).isEqualTo(5);
         assertThat(variant.getSize()).isEqualTo(Size.FREE);
         assertThat(variant.getStockQty()).isZero();
@@ -138,7 +137,7 @@ class ProductMappingTest extends PostgresTestSupport {
                 .wholesalerId(wholesalerId)
                 .productNumber(productNumber)
                 .name("오버핏 코튼 티셔츠")
-                .categoryId(9103L)
+                .categoryId(leafCategoryId)
                 .build();
     }
 
@@ -147,12 +146,5 @@ class ProductMappingTest extends PostgresTestSupport {
         em.flush();
         em.clear();
         return productRepository.findById(product.getId()).orElseThrow();
-    }
-
-    private long 도매처를_넣는다(String email, String bizRegNo) {
-        return jdbc.queryForObject("""
-                insert into wholesale.wholesaler (email, password_hash, biz_reg_no, biz_name, biz_owner_name)
-                values (?, 'x', ?, '테스트도매', '김테스트') returning id
-                """, Long.class, email, bizRegNo);
     }
 }
