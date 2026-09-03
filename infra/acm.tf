@@ -35,3 +35,35 @@ resource "aws_route53_record" "api_cert_validation" {
 
   allow_overwrite = true
 }
+
+# ④ 개발 환경용 인증서 — api-dev.ddmondo.co.kr
+#
+# 지금 올리는 환경이 쓴다. 위의 api 인증서는 손대지 않고 그대로 둔다 —
+# 나중에 운영 환경을 만들 때 그게 쓰인다. 환경마다 자기 인증서를 갖는 구조다.
+# ACM 인증서는 무료라 개수를 아낄 이유가 없다.
+resource "aws_acm_certificate" "api_dev" {
+  domain_name       = "api-dev.ddmondo.co.kr"
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_route53_record" "api_dev_cert_validation" {
+  for_each = {
+    for dvo in aws_acm_certificate.api_dev.domain_validation_options : dvo.domain_name => {
+      name  = dvo.resource_record_name
+      type  = dvo.resource_record_type
+      value = dvo.resource_record_value
+    }
+  }
+
+  zone_id = aws_route53_zone.root.zone_id
+  name    = each.value.name
+  type    = each.value.type
+  records = [each.value.value]
+  ttl     = 60
+
+  allow_overwrite = true
+}
