@@ -1,7 +1,7 @@
 package com.ondo.wholesale.product.controller;
 
 import com.ondo.wholesale.product.domain.ListingStatus;
-import com.ondo.wholesale.product.dto.ListingResponse;
+import com.ondo.wholesale.product.dto.response.ListingResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.PathVariable;

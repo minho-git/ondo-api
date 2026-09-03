@@ -3,6 +3,8 @@ package com.ondo.wholesale.product.controller;
 import com.ondo.wholesale.common.error.ErrorResponseWriter;
 import com.ondo.wholesale.common.response.ApiResponseBodyAdvice;
 import com.ondo.wholesale.common.trace.TraceIdFilter;
+import com.ondo.wholesale.product.service.ProductCommandService;
+import com.ondo.wholesale.product.service.ProductQueryService;
 import com.ondo.wholesale.config.SecurityConfig;
 import com.ondo.wholesale.security.ApprovedAuthorizationManager;
 import com.ondo.wholesale.security.RestAccessDeniedHandler;
@@ -13,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -34,46 +37,15 @@ class ProductStubApiTest {
     @Autowired
     private MockMvc mvc;
 
-    @Test
-    void 상품목록은_data배열과_페이징meta를_함께_내린다() throws Exception {
-        mvc.perform(get("/api/wholesale/products").with(TestSecuritySupport.approved()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[0].productNumber").value(18))
-                .andExpect(jsonPath("$.data[0].categoryPath.length()").value(3))
-                .andExpect(jsonPath("$.meta.page").value(0))
-                .andExpect(jsonPath("$.meta.totalElements").value(137));
-    }
+    // 등록(MUL-91)·목록·상세(MUL-92)는 실구현으로 빠졌다 — 남은 스텁 엔드포인트를 띄우기 위한 목.
+    @MockitoBean
+    private ProductCommandService productCommandService;
 
-    @Test
-    void 상품상세는_data봉투에_색상별SKU와_게시글을_담는다() throws Exception {
-        mvc.perform(get("/api/wholesale/products/5012").with(TestSecuritySupport.approved()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.meta").doesNotExist())
-                .andExpect(jsonPath("$.data.id").value(5012))
-                .andExpect(jsonPath("$.data.colorOptions[0].color.id").value(1))
-                .andExpect(jsonPath("$.data.colorOptions[0].variants[0].size").value("XS"))
-                .andExpect(jsonPath("$.data.listing.status").value("ON_SALE"))
-                .andExpect(jsonPath("$.data.listing.isSinglePieceAllowed").value(true));
-    }
+    @MockitoBean
+    private ProductQueryService productQueryService;
 
-    @Test
-    void 상품등록은_201로_상세와_동일한_스키마를_내린다() throws Exception {
-        mvc.perform(post("/api/wholesale/products")
-                        .with(TestSecuritySupport.approved())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "name": "루즈핏 오버핏 셔츠",
-                                  "categoryId": 312,
-                                  "colorOptions": [ { "colorId": 1, "sizes": ["FREE", "2XL"] } ],
-                                  "listing": null
-                                }
-                                """))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.productNumber").value(18))
-                .andExpect(jsonPath("$.data.listing.status").value("ON_SALE"));
-    }
+
+
 
     @Test
     void 시즌종료는_전이후_listing스키마를_내린다() throws Exception {
