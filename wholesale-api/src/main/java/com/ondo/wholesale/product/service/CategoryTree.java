@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,21 @@ public class CategoryTree {
         return List.copyOf(path);
     }
 
+
+    /** 목록 필터용 — 자기 자신 + 모든 하위 카테고리 id. 상위 노드를 받으면 하위 상품까지 걸린다. */
+    public List<Long> subtreeIds(Long categoryId) {
+        Map<Long, List<Category>> byParent = load().values().stream()
+                .filter(c -> c.getParentId() != null)
+                .collect(Collectors.groupingBy(Category::getParentId));
+        List<Long> ids = new ArrayList<>();
+        Deque<Long> stack = new ArrayDeque<>(List.of(categoryId));
+        while (!stack.isEmpty()) {
+            Long id = stack.pop();
+            ids.add(id);
+            byParent.getOrDefault(id, List.of()).forEach(c -> stack.push(c.getId()));
+        }
+        return ids;
+    }
 
     private Map<Long, Category> load() {
         return categoryRepository.findByActiveTrueOrderBySortOrderAscIdAsc().stream()
