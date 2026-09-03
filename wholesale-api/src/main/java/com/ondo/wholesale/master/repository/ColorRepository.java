@@ -1,6 +1,6 @@
-package com.ondo.wholesale.product.repository;
+package com.ondo.wholesale.master.repository;
 
-import com.ondo.wholesale.product.domain.Color;
+import com.ondo.wholesale.master.domain.Color;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 

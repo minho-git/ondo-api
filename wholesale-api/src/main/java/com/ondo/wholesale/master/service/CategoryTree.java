@@ -1,10 +1,10 @@
-package com.ondo.wholesale.product.service;
+package com.ondo.wholesale.master.service;
 
 import com.ondo.wholesale.common.error.ApiException;
 import com.ondo.wholesale.common.error.ErrorCode;
-import com.ondo.wholesale.product.domain.Category;
-import com.ondo.wholesale.product.dto.CategoryPathItem;
-import com.ondo.wholesale.product.repository.CategoryRepository;
+import com.ondo.wholesale.master.domain.Category;
+import com.ondo.wholesale.master.dto.CategoryPathItem;
+import com.ondo.wholesale.master.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

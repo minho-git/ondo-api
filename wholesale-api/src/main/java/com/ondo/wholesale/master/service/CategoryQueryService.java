@@ -1,8 +1,8 @@
-package com.ondo.wholesale.product.service;
+package com.ondo.wholesale.master.service;
 
-import com.ondo.wholesale.product.domain.Category;
-import com.ondo.wholesale.product.dto.CategoryNodeResponse;
-import com.ondo.wholesale.product.repository.CategoryRepository;
+import com.ondo.wholesale.master.domain.Category;
+import com.ondo.wholesale.master.dto.CategoryNodeResponse;
+import com.ondo.wholesale.master.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

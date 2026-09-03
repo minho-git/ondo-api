@@ -1,4 +1,4 @@
-package com.ondo.wholesale.product;
+package com.ondo.wholesale.master;
 
 import com.ondo.wholesale.security.support.TestSecuritySupport;
 import com.ondo.wholesale.support.PostgresTestSupport;

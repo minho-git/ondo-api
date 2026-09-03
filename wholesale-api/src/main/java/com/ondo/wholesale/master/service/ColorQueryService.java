@@ -1,8 +1,8 @@
-package com.ondo.wholesale.product.service;
+package com.ondo.wholesale.master.service;
 
-import com.ondo.wholesale.product.domain.Color;
-import com.ondo.wholesale.product.dto.ColorGroupResponse;
-import com.ondo.wholesale.product.repository.ColorRepository;
+import com.ondo.wholesale.master.domain.Color;
+import com.ondo.wholesale.master.dto.ColorGroupResponse;
+import com.ondo.wholesale.master.repository.ColorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

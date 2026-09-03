@@ -1,7 +1,7 @@
-package com.ondo.wholesale.product.controller;
+package com.ondo.wholesale.master.controller;
 
-import com.ondo.wholesale.product.dto.ColorGroupResponse;
-import com.ondo.wholesale.product.service.ColorQueryService;
+import com.ondo.wholesale.master.dto.ColorGroupResponse;
+import com.ondo.wholesale.master.service.ColorQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import io.swagger.v3.oas.annotations.tags.Tag;

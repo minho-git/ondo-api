@@ -1,5 +1,6 @@
 package com.ondo.wholesale.product.service;
 
+import com.ondo.wholesale.master.service.CategoryTree;
 import com.ondo.wholesale.product.domain.ColorOption;
 import com.ondo.wholesale.product.domain.Listing;
 import com.ondo.wholesale.product.domain.ListingVariant;

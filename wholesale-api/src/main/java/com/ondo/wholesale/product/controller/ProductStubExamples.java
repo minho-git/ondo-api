@@ -2,7 +2,7 @@ package com.ondo.wholesale.product.controller;
 
 import com.ondo.wholesale.product.domain.ListingStatus;
 import com.ondo.wholesale.product.domain.Size;
-import com.ondo.wholesale.product.dto.CategoryPathItem;
+import com.ondo.wholesale.master.dto.CategoryPathItem;
 import com.ondo.wholesale.product.dto.ColorOptionResponse;
 import com.ondo.wholesale.product.dto.ColorResponse;
 import com.ondo.wholesale.product.dto.ListingImageResponse;

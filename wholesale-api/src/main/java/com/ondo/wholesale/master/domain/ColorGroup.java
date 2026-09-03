@@ -1,4 +1,4 @@
-package com.ondo.wholesale.product.domain;
+package com.ondo.wholesale.master.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

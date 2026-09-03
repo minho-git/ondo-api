@@ -2,6 +2,7 @@ package com.ondo.wholesale.product.service;
 
 import com.ondo.wholesale.common.error.ResourceNotFoundException;
 import com.ondo.wholesale.common.response.ApiResponse;
+import com.ondo.wholesale.master.service.CategoryTree;
 import com.ondo.wholesale.product.domain.Listing;
 import com.ondo.wholesale.product.domain.Product;
 import com.ondo.wholesale.product.dto.ProductDetailResponse;

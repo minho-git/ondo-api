@@ -1,6 +1,7 @@
 package com.ondo.wholesale.product.domain;
 
 import com.ondo.wholesale.product.repository.ProductRepository;
+import com.ondo.wholesale.master.domain.Color;
 import com.ondo.wholesale.support.MasterDataFixture;
 import com.ondo.wholesale.support.MasterDataFixture;
 import com.ondo.wholesale.support.PostgresTestSupport;

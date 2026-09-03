@@ -3,10 +3,10 @@ package com.ondo.wholesale.product.service;
 import com.ondo.wholesale.common.error.ApiException;
 import com.ondo.wholesale.common.error.ErrorCode;
 import com.ondo.wholesale.common.error.ErrorResponse;
-import com.ondo.wholesale.product.domain.Color;
+import com.ondo.wholesale.master.domain.Color;
 import com.ondo.wholesale.product.domain.Size;
 import com.ondo.wholesale.product.dto.ColorOptionRequest;
-import com.ondo.wholesale.product.repository.ColorRepository;
+import com.ondo.wholesale.master.repository.ColorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

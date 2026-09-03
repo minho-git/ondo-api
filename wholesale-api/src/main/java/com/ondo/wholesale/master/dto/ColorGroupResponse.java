@@ -1,4 +1,4 @@
-package com.ondo.wholesale.product.dto;
+package com.ondo.wholesale.master.dto;
 
 import java.util.List;
 

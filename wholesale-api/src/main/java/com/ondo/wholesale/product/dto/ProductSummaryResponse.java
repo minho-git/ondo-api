@@ -2,6 +2,8 @@ package com.ondo.wholesale.product.dto;
 
 import com.ondo.wholesale.product.domain.ListingStatus;
 
+import com.ondo.wholesale.master.dto.CategoryPathItem;
+
 import java.util.List;
 
 /**

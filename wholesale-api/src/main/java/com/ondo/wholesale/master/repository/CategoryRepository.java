@@ -1,6 +1,6 @@
-package com.ondo.wholesale.product.repository;
+package com.ondo.wholesale.master.repository;
 
-import com.ondo.wholesale.product.domain.Category;
+import com.ondo.wholesale.master.domain.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
