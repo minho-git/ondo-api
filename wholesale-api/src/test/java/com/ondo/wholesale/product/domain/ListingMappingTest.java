@@ -5,6 +5,7 @@ import com.ondo.wholesale.product.repository.ListingVariantRepository;
 import com.ondo.wholesale.product.repository.ProductRepository;
 import com.ondo.wholesale.master.domain.Color;
 import com.ondo.wholesale.support.MasterDataFixture;
+import com.ondo.wholesale.master.domain.Color;
 import com.ondo.wholesale.support.MasterDataFixture;
 import com.ondo.wholesale.support.PostgresTestSupport;
 import jakarta.persistence.EntityManager;

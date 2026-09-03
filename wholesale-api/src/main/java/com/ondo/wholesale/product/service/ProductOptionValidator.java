@@ -5,7 +5,7 @@ import com.ondo.wholesale.common.error.ErrorCode;
 import com.ondo.wholesale.common.error.ErrorResponse;
 import com.ondo.wholesale.master.domain.Color;
 import com.ondo.wholesale.product.domain.Size;
-import com.ondo.wholesale.product.dto.ColorOptionRequest;
+import com.ondo.wholesale.product.dto.request.ColorOptionRequest;
 import com.ondo.wholesale.master.repository.ColorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

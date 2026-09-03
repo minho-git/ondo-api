@@ -1,6 +1,7 @@
 package com.ondo.wholesale.product.domain;
 
 import com.ondo.wholesale.master.domain.Color;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

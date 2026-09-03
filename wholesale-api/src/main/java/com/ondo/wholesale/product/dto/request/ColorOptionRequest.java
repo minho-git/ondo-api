@@ -1,4 +1,4 @@
-package com.ondo.wholesale.product.dto;
+package com.ondo.wholesale.product.dto.request;
 
 import com.ondo.wholesale.product.domain.Size;
 import io.swagger.v3.oas.annotations.media.Schema;

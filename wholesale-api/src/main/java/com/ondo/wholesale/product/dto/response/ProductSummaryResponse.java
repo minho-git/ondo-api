@@ -1,4 +1,4 @@
-package com.ondo.wholesale.product.dto;
+package com.ondo.wholesale.product.dto.response;
 
 import com.ondo.wholesale.product.domain.ListingStatus;
 

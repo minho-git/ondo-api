@@ -1,17 +1,18 @@
 package com.ondo.wholesale.product.service;
 
 import com.ondo.wholesale.master.service.CategoryTree;
+
 import com.ondo.wholesale.product.domain.ColorOption;
 import com.ondo.wholesale.product.domain.Listing;
 import com.ondo.wholesale.product.domain.ListingVariant;
 import com.ondo.wholesale.product.domain.Product;
 import com.ondo.wholesale.product.domain.Variant;
-import com.ondo.wholesale.product.dto.ColorOptionResponse;
-import com.ondo.wholesale.product.dto.ColorResponse;
-import com.ondo.wholesale.product.dto.ListingImageResponse;
-import com.ondo.wholesale.product.dto.ListingResponse;
-import com.ondo.wholesale.product.dto.ProductDetailResponse;
-import com.ondo.wholesale.product.dto.VariantResponse;
+import com.ondo.wholesale.product.dto.response.ColorOptionResponse;
+import com.ondo.wholesale.product.dto.response.ColorResponse;
+import com.ondo.wholesale.product.dto.response.ListingImageResponse;
+import com.ondo.wholesale.product.dto.response.ListingResponse;
+import com.ondo.wholesale.product.dto.response.ProductDetailResponse;
+import com.ondo.wholesale.product.dto.response.VariantResponse;
 import com.ondo.wholesale.product.repository.ColorOptionRepository;
 import com.ondo.wholesale.product.repository.ListingRepository;
 import com.ondo.wholesale.product.repository.ListingVariantRepository;
