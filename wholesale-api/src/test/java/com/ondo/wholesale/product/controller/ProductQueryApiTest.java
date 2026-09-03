@@ -50,6 +50,14 @@ class ProductQueryApiTest {
 
 
     @Test
+    void 날짜_형식이_틀리면_VALIDATION_FAILED_400이다() throws Exception {
+        mvc.perform(get("/api/wholesale/products?from=2026/09/01").with(TestSecuritySupport.approved()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.errors[0].field").value("from"));
+    }
+
+    @Test
     void from이_to보다_뒤면_VALIDATION_FAILED_400이다() throws Exception {
         mvc.perform(get("/api/wholesale/products?from=2026-09-03&to=2026-09-01")
                         .with(TestSecuritySupport.approved()))

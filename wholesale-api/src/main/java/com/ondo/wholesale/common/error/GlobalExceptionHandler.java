@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
 
@@ -37,6 +38,14 @@ public class GlobalExceptionHandler {
         List<ErrorResponse.FieldError> errors = ex.getConstraintViolations().stream()
                 .map(v -> new ErrorResponse.FieldError(lastNode(v.getPropertyPath().toString()), v.getMessage()))
                 .toList();
+        return build(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultMessage(), errors);
+    }
+
+    /** 쿼리 파라미터 타입 불일치(예: 날짜 형식 오류) — 클라이언트 입력 문제라 400 이다. */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        List<ErrorResponse.FieldError> errors = List.of(
+                new ErrorResponse.FieldError(ex.getName(), "값의 형식이 올바르지 않습니다."));
         return build(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultMessage(), errors);
     }
 
