@@ -4,3 +4,9 @@ spring:
     url: jdbc:postgresql://localhost:5433/ondo_retail
     username: ondo
     password: ondo
+
+# 로컬 소매 프론트 dev 서버의 교차 출처 호출 허용 (MUL-85).
+# 3001 이다 — ondo-web 의 apps/retail 이 `next dev -p 3001`. 3000 은 도매 화면이다.
+ondo:
+  cors:
+    allowed-origins: http://localhost:3001
