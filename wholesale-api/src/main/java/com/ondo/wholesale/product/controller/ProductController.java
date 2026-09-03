@@ -1,13 +1,18 @@
 package com.ondo.wholesale.product.controller;
 
 import com.ondo.wholesale.common.response.ApiResponse;
+import com.ondo.wholesale.product.service.ProductCommandService;
+import com.ondo.wholesale.security.WholesalePrincipal;
 import com.ondo.wholesale.product.dto.ProductCreateRequest;
 import com.ondo.wholesale.product.dto.ProductDetailResponse;
 import com.ondo.wholesale.product.dto.ProductSummaryResponse;
 import com.ondo.wholesale.product.dto.ProductUpdateRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,13 +29,16 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * 상품 계약 스텁 (MUL-81) — 원본: api-lite/02_상품게시. example 응답만 반환하며
- * 실구현(MUL-46)이 서비스 계층으로 교체한다. 인증·봉투는 실서버와 동일하게 동작한다.
+ * 상품 API — 원본 계약: api-lite/02_상품게시. 등록(MUL-91)은 서비스 계층이 처리하고,
+ * 목록·상세·수정·삭제는 아직 계약 스텁(MUL-81)이다 — 각 하위 작업이 순서대로 교체한다.
  */
 @Tag(name = "02 상품·게시")
 @RestController
 @RequestMapping("/api/wholesale/products")
+@RequiredArgsConstructor
 public class ProductController {
+
+    private final ProductCommandService productCommandService;
 
     @Operation(summary = "상품 등록 (게시글 동시 생성)", description = """
             `listing`을 함께 보내면 게시글까지 한 트랜잭션에 만든다. `listing: null` = 상품만 등록.
@@ -40,8 +48,9 @@ public class ProductController {
             `SIZE_DUPLICATED` · `OPTION_REQUIRED` · `PRICE_REQUIRED` · `INVARIANT_VIOLATED` · `VALIDATION_FAILED`""")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ProductDetailResponse create(@RequestBody ProductCreateRequest request) {
-        return ProductStubExamples.productDetail();
+    public ProductDetailResponse create(@AuthenticationPrincipal WholesalePrincipal principal,
+                                        @Valid @RequestBody ProductCreateRequest request) {
+        return productCommandService.create(principal.wholesalerId(), request);
     }
 
     @Operation(summary = "상품 목록 (아코디언 헤더)", description = """

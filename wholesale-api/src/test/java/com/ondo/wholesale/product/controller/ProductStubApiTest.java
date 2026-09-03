@@ -3,6 +3,7 @@ package com.ondo.wholesale.product.controller;
 import com.ondo.wholesale.common.error.ErrorResponseWriter;
 import com.ondo.wholesale.common.response.ApiResponseBodyAdvice;
 import com.ondo.wholesale.common.trace.TraceIdFilter;
+import com.ondo.wholesale.product.service.ProductCommandService;
 import com.ondo.wholesale.config.SecurityConfig;
 import com.ondo.wholesale.security.ApprovedAuthorizationManager;
 import com.ondo.wholesale.security.RestAccessDeniedHandler;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -33,6 +35,10 @@ class ProductStubApiTest {
 
     @Autowired
     private MockMvc mvc;
+
+    // 등록(MUL-91)은 실구현으로 빠졌다 — 남은 스텁 엔드포인트를 띄우기 위한 목.
+    @MockitoBean
+    private ProductCommandService productCommandService;
 
     @Test
     void 상품목록은_data배열과_페이징meta를_함께_내린다() throws Exception {
@@ -57,23 +63,6 @@ class ProductStubApiTest {
                 .andExpect(jsonPath("$.data.listing.isSinglePieceAllowed").value(true));
     }
 
-    @Test
-    void 상품등록은_201로_상세와_동일한_스키마를_내린다() throws Exception {
-        mvc.perform(post("/api/wholesale/products")
-                        .with(TestSecuritySupport.approved())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "name": "루즈핏 오버핏 셔츠",
-                                  "categoryId": 312,
-                                  "colorOptions": [ { "colorId": 1, "sizes": ["FREE", "2XL"] } ],
-                                  "listing": null
-                                }
-                                """))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.productNumber").value(18))
-                .andExpect(jsonPath("$.data.listing.status").value("ON_SALE"));
-    }
 
     @Test
     void 시즌종료는_전이후_listing스키마를_내린다() throws Exception {

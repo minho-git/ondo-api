@@ -25,6 +25,14 @@ public final class TestSecuritySupport {
         return authentication(wholesaler(ApprovalStatus.APPROVED));
     }
 
+    /** 특정 도매처로 승인된 세션 — 통합 테스트가 실제 wholesaler 행의 id 로 스코핑할 때 쓴다. */
+    public static RequestPostProcessor approvedAs(long wholesalerId) {
+        WholesalePrincipal principal = new WholesalePrincipal(
+                wholesalerId, "w" + wholesalerId + "@example.com", ApprovalStatus.APPROVED);
+        return authentication(new UsernamePasswordAuthenticationToken(
+                principal, null, List.of(new SimpleGrantedAuthority("ROLE_WHOLESALER"))));
+    }
+
     /** 승인 대기(PENDING) 도매처 세션. */
     public static RequestPostProcessor pending() {
         return authentication(wholesaler(ApprovalStatus.PENDING));
