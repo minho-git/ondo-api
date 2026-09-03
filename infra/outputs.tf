@@ -14,3 +14,8 @@ output "api_certificate_arn" {
   description = "C단계에서 ALB HTTPS 리스너에 붙일 인증서 주소"
   value       = aws_acm_certificate.api.arn
 }
+
+output "api_dev_certificate_arn" {
+  description = "개발 환경 ALB HTTPS 리스너에 붙일 인증서"
+  value       = aws_acm_certificate.api_dev.arn
+}
