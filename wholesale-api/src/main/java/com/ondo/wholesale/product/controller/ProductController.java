@@ -2,6 +2,8 @@ package com.ondo.wholesale.product.controller;
 
 import com.ondo.wholesale.common.response.ApiResponse;
 import com.ondo.wholesale.product.service.ProductCommandService;
+import com.ondo.wholesale.product.service.ProductListQuery;
+import com.ondo.wholesale.product.service.ProductQueryService;
 import com.ondo.wholesale.security.WholesalePrincipal;
 import com.ondo.wholesale.product.dto.ProductCreateRequest;
 import com.ondo.wholesale.product.dto.ProductDetailResponse;
@@ -29,8 +31,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * 상품 API — 원본 계약: api-lite/02_상품게시. 등록(MUL-91)은 서비스 계층이 처리하고,
- * 목록·상세·수정·삭제는 아직 계약 스텁(MUL-81)이다 — 각 하위 작업이 순서대로 교체한다.
+ * 상품 API — 원본 계약: api-lite/02_상품게시. 등록(MUL-91)·목록·상세(MUL-92)는 서비스 계층이
+ * 처리하고, 수정·삭제는 아직 계약 스텁(MUL-81)이다 — MUL-93·94 가 교체한다.
  */
 @Tag(name = "02 상품·게시")
 @RestController
@@ -39,6 +41,7 @@ import java.util.List;
 public class ProductController {
 
     private final ProductCommandService productCommandService;
+    private final ProductQueryService productQueryService;
 
     @Operation(summary = "상품 등록 (게시글 동시 생성)", description = """
             `listing`을 함께 보내면 게시글까지 한 트랜잭션에 만든다. `listing: null` = 상품만 등록.
@@ -66,10 +69,10 @@ public class ProductController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "20") Integer size,
-            @RequestParam(required = false) String sort) {
-        return ApiResponse.paged(
-                ProductStubExamples.productSummaries(),
-                new ApiResponse.PageMeta(0, 20, 137, 7));
+            @RequestParam(required = false) String sort,
+            @AuthenticationPrincipal WholesalePrincipal principal) {
+        return productQueryService.list(principal.wholesalerId(),
+                ProductListQuery.of(q, categoryId, from, to, page, size, sort));
     }
 
     @Operation(summary = "상품 상세 (색상·SKU·재고·게시글)", description = """
@@ -78,8 +81,9 @@ public class ProductController {
 
             에러: 404 `RESOURCE_NOT_FOUND` (없거나 타 도매처 자원)""")
     @GetMapping("/{productId}")
-    public ProductDetailResponse detail(@PathVariable Long productId) {
-        return ProductStubExamples.productDetail();
+    public ProductDetailResponse detail(@AuthenticationPrincipal WholesalePrincipal principal,
+                                        @PathVariable Long productId) {
+        return productQueryService.detail(principal.wholesalerId(), productId);
     }
 
     @Operation(summary = "상품 수정 (게시글 생성·수정 흡수)", description = """

@@ -4,6 +4,7 @@ import com.ondo.wholesale.common.error.ErrorResponseWriter;
 import com.ondo.wholesale.common.response.ApiResponseBodyAdvice;
 import com.ondo.wholesale.common.trace.TraceIdFilter;
 import com.ondo.wholesale.product.service.ProductCommandService;
+import com.ondo.wholesale.product.service.ProductQueryService;
 import com.ondo.wholesale.config.SecurityConfig;
 import com.ondo.wholesale.security.ApprovedAuthorizationManager;
 import com.ondo.wholesale.security.RestAccessDeniedHandler;
@@ -36,32 +37,14 @@ class ProductStubApiTest {
     @Autowired
     private MockMvc mvc;
 
-    // 등록(MUL-91)은 실구현으로 빠졌다 — 남은 스텁 엔드포인트를 띄우기 위한 목.
+    // 등록(MUL-91)·목록·상세(MUL-92)는 실구현으로 빠졌다 — 남은 스텁 엔드포인트를 띄우기 위한 목.
     @MockitoBean
     private ProductCommandService productCommandService;
 
-    @Test
-    void 상품목록은_data배열과_페이징meta를_함께_내린다() throws Exception {
-        mvc.perform(get("/api/wholesale/products").with(TestSecuritySupport.approved()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[0].productNumber").value(18))
-                .andExpect(jsonPath("$.data[0].categoryPath.length()").value(3))
-                .andExpect(jsonPath("$.meta.page").value(0))
-                .andExpect(jsonPath("$.meta.totalElements").value(137));
-    }
+    @MockitoBean
+    private ProductQueryService productQueryService;
 
-    @Test
-    void 상품상세는_data봉투에_색상별SKU와_게시글을_담는다() throws Exception {
-        mvc.perform(get("/api/wholesale/products/5012").with(TestSecuritySupport.approved()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.meta").doesNotExist())
-                .andExpect(jsonPath("$.data.id").value(5012))
-                .andExpect(jsonPath("$.data.colorOptions[0].color.id").value(1))
-                .andExpect(jsonPath("$.data.colorOptions[0].variants[0].size").value("XS"))
-                .andExpect(jsonPath("$.data.listing.status").value("ON_SALE"))
-                .andExpect(jsonPath("$.data.listing.isSinglePieceAllowed").value(true));
-    }
+
 
 
     @Test

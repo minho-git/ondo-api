@@ -8,6 +8,7 @@ import com.ondo.wholesale.common.response.ApiResponseBodyAdvice;
 import com.ondo.wholesale.common.trace.TraceIdFilter;
 import com.ondo.wholesale.config.SecurityConfig;
 import com.ondo.wholesale.product.service.ProductCommandService;
+import com.ondo.wholesale.product.service.ProductQueryService;
 import com.ondo.wholesale.security.ApprovedAuthorizationManager;
 import com.ondo.wholesale.security.RestAccessDeniedHandler;
 import com.ondo.wholesale.security.RestAuthenticationEntryPoint;
@@ -42,6 +43,9 @@ class ProductCreateApiTest {
 
     @MockitoBean
     private ProductCommandService productCommandService;
+
+    @MockitoBean
+    private ProductQueryService productQueryService;
 
     @Test
     void 이름이_비면_VALIDATION_FAILED_400이다() throws Exception {
