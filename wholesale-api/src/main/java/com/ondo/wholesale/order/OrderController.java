@@ -108,8 +108,8 @@ public class OrderController {
             미송 id 는 담지 않는다 — 라인당 OPEN 미송이 최대 1건이라 서버가 찾아 연결한다.
             배분은 재고를 줄이지 않는다 — 실물이 나가는 것은 출고다.
 
-            에러: 400 `ORDER_ITEM_NOT_IN_ORDER` · `DUPLICATE_ORDER_ITEM` · `INVARIANT_VIOLATED` /
-            404 `RESOURCE_NOT_FOUND` / 409 `TRANSITION_NOT_ALLOWED` · `ALLOCATION_EXCEEDS_ORDER` ·
+            에러: 400 `ORDER_ITEM_NOT_IN_ORDER` · `DUPLICATE_ORDER_ITEM` · `INVARIANT_VIOLATED` ·
+            `ALLOCATION_EXCEEDS_ORDER` / 404 `RESOURCE_NOT_FOUND` / 409 `TRANSITION_NOT_ALLOWED` ·
             `INSUFFICIENT_STOCK` · `ALLOCATION_EXCEEDS_REMAINING`""")
     @PostMapping("/{orderId}/packings")
     @ResponseStatus(HttpStatus.CREATED)

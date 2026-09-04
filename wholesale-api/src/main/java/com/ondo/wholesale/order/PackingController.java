@@ -17,7 +17,7 @@ public class PackingController {
             배분이 풀린다 — `allocatedQty`가 줄고 가용재고가 돌아오며, 해소했던 미송이 되살아난다.
             부분 취소는 없다. PACKED 는 출고 묶음 해제(unpack) 후에만 취소할 수 있다.
 
-            에러: 404 `RESOURCE_NOT_FOUND` (이미 취소 포함) / 409 `DOCUMENT_FROZEN`""")
+            에러: 404 `RESOURCE_NOT_FOUND` (이미 취소 포함) / 409 `DOCUMENT_FINALIZED`""")
     @DeleteMapping("/api/wholesale/packings/{packingId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancelPacking(@PathVariable Long packingId) {
