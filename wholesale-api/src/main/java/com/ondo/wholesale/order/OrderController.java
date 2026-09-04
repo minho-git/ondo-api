@@ -2,6 +2,11 @@ package com.ondo.wholesale.order;
 
 import com.ondo.wholesale.common.response.ApiResponse;
 import com.ondo.wholesale.order.dto.OrderConfirmRequest;
+import com.ondo.wholesale.order.service.OrderListQuery;
+import com.ondo.wholesale.order.service.OrderQueryService;
+import com.ondo.wholesale.security.WholesalePrincipal;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.ondo.wholesale.order.dto.OrderDetailResponse;
 import com.ondo.wholesale.order.dto.OrderFilterResponse;
 import com.ondo.wholesale.order.dto.OrderSummaryResponse;
@@ -25,13 +30,16 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * 주문 계약 스텁 (MUL-82) — 원본: api-lite/04_주문. example 응답만 반환하며
- * 실구현(MUL-47)이 서비스 계층으로 교체한다. 인증·봉투는 실서버와 동일하게 동작한다.
+ * 주문 API (MUL-47) — 원본 계약: api-lite/04_주문.
+ * 조회 3종은 실구현이고, 명령 4종은 아직 계약 스텁(MUL-82)이라 example 응답을 반환한다.
  */
 @Tag(name = "04 주문")
 @RestController
 @RequestMapping("/api/wholesale/orders")
+@RequiredArgsConstructor
 public class OrderController {
+
+    private final OrderQueryService orderQueryService;
 
     @Operation(summary = "주문 목록", description = """
             주문 탭 리스트와 정산 탭 [정산 상태] 세그먼트가 같은 스키마를 쓴다 — 거는 필터만 다르다.
@@ -42,6 +50,7 @@ public class OrderController {
             에러: 400 `VALIDATION_FAILED` (`from > to` / 정의되지 않은 `filter`·`settlementStatus` / `size > 100`)""")
     @GetMapping
     public ApiResponse<List<OrderSummaryResponse>> list(
+            @AuthenticationPrincipal WholesalePrincipal principal,
             @RequestParam(required = false) OrderFilterKey filter,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Long retailerId,
@@ -51,9 +60,9 @@ public class OrderController {
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "20") Integer size,
             @RequestParam(required = false) String sort) {
-        return ApiResponse.paged(
-                OrderStubExamples.orderSummaries(),
-                new ApiResponse.PageMeta(0, 20, 75, 4));
+        OrderListQuery query = OrderListQuery.of(filter, q, retailerId, settlementStatus,
+                from, to, page, size, sort);
+        return orderQueryService.list(principal.wholesalerId(), query);
     }
 
     @Operation(summary = "상태 칩 (필터 리스트)", description = """
@@ -64,10 +73,11 @@ public class OrderController {
             에러: 400 `VALIDATION_FAILED` (`from > to`)""")
     @GetMapping("/filters")
     public List<OrderFilterResponse> filters(
+            @AuthenticationPrincipal WholesalePrincipal principal,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return OrderStubExamples.orderFilters();
+        return orderQueryService.filters(principal.wholesalerId(), q, from, to);
     }
 
     @Operation(summary = "주문 상세", description = """
@@ -76,8 +86,9 @@ public class OrderController {
 
             에러: 404 `RESOURCE_NOT_FOUND`""")
     @GetMapping("/{orderId}")
-    public OrderDetailResponse detail(@PathVariable Long orderId) {
-        return OrderStubExamples.confirmedDetail();
+    public OrderDetailResponse detail(@AuthenticationPrincipal WholesalePrincipal principal,
+                                      @PathVariable Long orderId) {
+        return orderQueryService.detail(principal.wholesalerId(), orderId);
     }
 
     @Operation(summary = "주문 확정 (확정 + 배분 + 미송 생성)", description = """

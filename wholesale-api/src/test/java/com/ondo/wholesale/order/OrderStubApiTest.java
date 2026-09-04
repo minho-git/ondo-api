@@ -7,11 +7,13 @@ import com.ondo.wholesale.config.SecurityConfig;
 import com.ondo.wholesale.security.ApprovedAuthorizationManager;
 import com.ondo.wholesale.security.RestAccessDeniedHandler;
 import com.ondo.wholesale.security.RestAuthenticationEntryPoint;
+import com.ondo.wholesale.order.service.OrderQueryService;
 import com.ondo.wholesale.security.support.TestSecuritySupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -35,25 +37,9 @@ class OrderStubApiTest {
     @Autowired
     private MockMvc mvc;
 
-    @Test
-    void 주문목록은_data배열과_페이징meta를_함께_내린다() throws Exception {
-        mvc.perform(get("/api/wholesale/orders").with(TestSecuritySupport.approved()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].status.key").value("NEW"))
-                .andExpect(jsonPath("$.data[0].status.label").value("신규 주문"))
-                .andExpect(jsonPath("$.data[0].isConfirmable").value(true))
-                .andExpect(jsonPath("$.meta.totalElements").value(75));
-    }
-
-    @Test
-    void 상태칩은_페이징없이_ALL을_포함해_내린다() throws Exception {
-        mvc.perform(get("/api/wholesale/orders/filters").with(TestSecuritySupport.approved()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.meta").doesNotExist())
-                .andExpect(jsonPath("$.data[0].key").value("ALL"))
-                .andExpect(jsonPath("$.data[0].count").value(82))
-                .andExpect(jsonPath("$.data.length()").value(6));
-    }
+    /** 조회는 실구현으로 교체됐다(MUL-47) — 남은 명령 스텁만 보는 테스트라 조회 서비스는 모킹한다. */
+    @MockitoBean
+    private OrderQueryService orderQueryService;
 
     @Test
     void 주문확정은_상세와_동일한_스키마로_배분과_미송_현황을_내린다() throws Exception {

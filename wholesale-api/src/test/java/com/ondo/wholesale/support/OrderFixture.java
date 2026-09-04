@@ -58,6 +58,13 @@ public final class OrderFixture {
                 """, Long.class, orderId, variantId, qty, unitPrice, allocated, shipped);
     }
 
+    public static long 미송을_넣는다(JdbcTemplate jdbc, long orderItemId, int qty, String status) {
+        return jdbc.queryForObject("""
+                insert into wholesale.backorder (order_item_id, qty, status)
+                values (?, ?, ?) returning id
+                """, Long.class, orderItemId, qty, status);
+    }
+
     /** 출고 = 미수 발생(+). */
     public static void 원장_출고를_넣는다(JdbcTemplate jdbc, long partnerId, long orderId, long amount) {
         원장을_넣는다(jdbc, partnerId, orderId, "OUTBOUND", amount);
