@@ -47,9 +47,14 @@ public record RetailListingDetailResponse(
     @Schema(name = "RetailGatewayListingWholesaler")
     public record Wholesaler(Long id, String name, String storeBuilding, String storeUnit) {}
 
-    /** @param imageUrl 이 색상의 대표 이미지. 색을 바꾸면 큰 사진이 이걸로 바뀐다 */
+    /**
+     * 색상 하나와 그 색으로 고를 수 있는 사이즈들.
+     *
+     * <p><b>색상별 대표 이미지는 없다.</b> 도매 상품 등록이 옵션별 이미지를 받지 않기로
+     * 정해져서(팀 합의) 채울 경로가 없다. 사진은 게시글 이미지({@code images})가 전부다.
+     */
     @Schema(name = "RetailGatewayColorOption")
-    public record ColorOption(Color color, String imageUrl, List<Variant> variants) {}
+    public record ColorOption(Color color, List<Variant> variants) {}
 
     /** @param groupName 필터의 색상 그룹 이름 */
     @Schema(name = "RetailGatewayListingColor")

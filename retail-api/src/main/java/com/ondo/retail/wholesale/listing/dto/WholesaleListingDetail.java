@@ -27,7 +27,7 @@ public record WholesaleListingDetail(
 
     public record Wholesaler(Long id, String name, String storeBuilding, String storeUnit) {}
 
-    public record ColorOption(Color color, String imageUrl, List<Variant> variants) {}
+    public record ColorOption(Color color, List<Variant> variants) {}
 
     public record Color(Long id, String name, String hex, String groupName) {}
 

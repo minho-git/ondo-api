@@ -260,7 +260,6 @@ public class RetailGatewayListingQuery {
                                c.name      AS color_name,
                                c.hex       AS hex,
                                cg.name     AS group_name,
-                               co.image_url AS image_url,
                                v.id        AS variant_id,
                                v.size      AS size,
                                lv.sale_price  AS sale_price,
@@ -279,7 +278,6 @@ public class RetailGatewayListingQuery {
                         rs.getString("color_name"),
                         rs.getString("hex"),
                         rs.getString("group_name"),
-                        rs.getString("image_url"),
                         rs.getLong("variant_id"),
                         rs.getString("size"),
                         rs.getInt("sale_price"),
@@ -389,7 +387,7 @@ public class RetailGatewayListingQuery {
 
     /** 색상 × 사이즈 한 줄. 같은 색이 사이즈 수만큼 반복해서 나온다. */
     public record ColorVariantRow(
-            Long colorId, String colorName, String hex, String groupName, String imageUrl,
+            Long colorId, String colorName, String hex, String groupName,
             Long variantId, String size, Integer salePrice, Integer orderLimit) {}
 
     /**

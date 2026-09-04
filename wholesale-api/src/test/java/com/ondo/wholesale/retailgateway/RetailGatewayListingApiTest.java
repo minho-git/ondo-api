@@ -60,8 +60,8 @@ class RetailGatewayListingApiTest extends PostgresTestSupport {
         // 상품 1 — 게시 중. 색 2개 × 사이즈 3개
         jdbc.update("INSERT INTO wholesale.product (id, wholesaler_id, product_number, name, category_id, last_variant_seq)"
                 + " VALUES (901, 901, 1, '빈티지 셔츠', 903, 3)");
-        jdbc.update("INSERT INTO wholesale.color_option (id, product_id, color_id, image_url) VALUES (901, 901, 902, 'red.jpg')");
-        jdbc.update("INSERT INTO wholesale.color_option (id, product_id, color_id, image_url) VALUES (902, 901, 901, 'black.jpg')");
+        jdbc.update("INSERT INTO wholesale.color_option (id, product_id, color_id) VALUES (901, 901, 902)");
+        jdbc.update("INSERT INTO wholesale.color_option (id, product_id, color_id) VALUES (902, 901, 901)");
         jdbc.update("INSERT INTO wholesale.variant (id, color_option_id, product_id, size, variant_seq) VALUES (901, 901, 901, 'S', 1)");
         jdbc.update("INSERT INTO wholesale.variant (id, color_option_id, product_id, size, variant_seq) VALUES (902, 901, 901, 'M', 2)");
         jdbc.update("INSERT INTO wholesale.variant (id, color_option_id, product_id, size, variant_seq) VALUES (903, 902, 901, 'L', 3)");

@@ -63,11 +63,10 @@ public record ListingDetailResponse(
     }
     /**
      * @param color    색상 정보
-     * @param imageUrl 이 색상의 대표 이미지
      * @param variants 이 색상으로 고를 수 있는 사이즈들
      */
 
-    public record ColorOption(Color color, String imageUrl, List<Variant> variants) {
+    public record ColorOption(Color color, List<Variant> variants) {
     }
     /**
      * @param id        필터의 colorIds 에 넣는 값

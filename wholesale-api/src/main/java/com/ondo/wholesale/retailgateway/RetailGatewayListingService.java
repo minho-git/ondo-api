@@ -158,7 +158,6 @@ public class RetailGatewayListingService {
             return new RetailListingDetailResponse.ColorOption(
                     new RetailListingDetailResponse.Color(
                             first.colorId(), first.colorName(), first.hex(), first.groupName()),
-                    first.imageUrl(),
                     variants);
         }).toList();
     }
