@@ -24,6 +24,12 @@ public class ApiException extends RuntimeException {
         this.errors = (errors == null) ? List.of() : List.copyOf(errors);
     }
 
+    /** 필드 하나가 형식 규칙을 어긴 400 — 목록 쿼리 검증들이 같은 꼴로 쓴다. */
+    public static ApiException validationFailed(String field, String reason) {
+        return new ApiException(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultMessage(),
+                List.of(new ErrorResponse.FieldError(field, reason)));
+    }
+
     public ErrorCode errorCode() {
         return errorCode;
     }

@@ -1,8 +1,6 @@
 package com.ondo.wholesale.order.service;
 
 import com.ondo.wholesale.common.error.ApiException;
-import com.ondo.wholesale.common.error.ErrorCode;
-import com.ondo.wholesale.common.error.ErrorResponse;
 import com.ondo.wholesale.common.error.ResourceNotFoundException;
 import com.ondo.wholesale.common.response.ApiResponse;
 import com.ondo.wholesale.order.OrderFilterKey;
@@ -91,8 +89,7 @@ public class OrderQueryService {
 
     public List<OrderFilterResponse> filters(Long wholesalerId, String q, LocalDate from, LocalDate to) {
         if (from != null && to != null && from.isAfter(to)) {
-            throw new ApiException(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultMessage(),
-                    List.of(new ErrorResponse.FieldError("from", "from 이 to 보다 뒤일 수 없다.")));
+            throw ApiException.validationFailed("from", "from 이 to 보다 뒤일 수 없다.");
         }
         Map<OrderFilterKey, Long> counts = reader.chipCounts(wholesalerId, q, from, to);
         return CHIP_ORDER.stream()

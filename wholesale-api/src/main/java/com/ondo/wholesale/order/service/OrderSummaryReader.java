@@ -1,5 +1,6 @@
 package com.ondo.wholesale.order.service;
 
+import com.ondo.wholesale.common.time.KstDays;
 import com.ondo.wholesale.order.OrderFilterKey;
 import com.ondo.wholesale.order.SettlementStatus;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -7,7 +8,6 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -22,8 +22,6 @@ import java.util.Map;
  */
 @Component
 public class OrderSummaryReader {
-
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     /** 목록 행 머리의 "상품명 (색상) 외 N건" 재료. 첫 라인 = 라인 id 최소. */
     public record FirstLine(String productName, String colorName, int additionalCount) {
@@ -148,11 +146,11 @@ public class OrderSummaryReader {
         }
         if (from != null) {
             where.append(" and o.ordered_at >= :from");
-            params.addValue("from", from.atStartOfDay(KST).toOffsetDateTime());
+            params.addValue("from", KstDays.start(from));
         }
         if (to != null) {
             where.append(" and o.ordered_at < :toNext");
-            params.addValue("toNext", to.plusDays(1).atStartOfDay(KST).toOffsetDateTime());
+            params.addValue("toNext", KstDays.startOfNext(to));
         }
 
         Map<OrderFilterKey, Long> result = new EnumMap<>(OrderFilterKey.class);

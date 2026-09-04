@@ -1,5 +1,6 @@
 package com.ondo.wholesale.order.service;
 
+import com.ondo.wholesale.common.time.KstDays;
 import com.ondo.wholesale.order.OrderFilterKey;
 import com.ondo.wholesale.order.domain.Order;
 import com.ondo.wholesale.order.domain.OrderItem;
@@ -14,14 +15,10 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.List;
 
 /** 주문 목록 검색 조건. 조합은 {@link OrderQueryService}가 한다 (MUL-47). */
 final class OrderSpecs {
-
-    /** 기간 필터의 하루 경계 기준 시간대 — 화면·계약이 한국 날짜를 전제한다. */
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private OrderSpecs() {
     }
@@ -98,13 +95,13 @@ final class OrderSpecs {
             var path = root.<OffsetDateTime>get("orderedAt");
             if (from != null && to != null) {
                 return cb.and(
-                        cb.greaterThanOrEqualTo(path, from.atStartOfDay(KST).toOffsetDateTime()),
-                        cb.lessThan(path, to.plusDays(1).atStartOfDay(KST).toOffsetDateTime()));
+                        cb.greaterThanOrEqualTo(path, KstDays.start(from)),
+                        cb.lessThan(path, KstDays.startOfNext(to)));
             }
             if (from != null) {
-                return cb.greaterThanOrEqualTo(path, from.atStartOfDay(KST).toOffsetDateTime());
+                return cb.greaterThanOrEqualTo(path, KstDays.start(from));
             }
-            return cb.lessThan(path, to.plusDays(1).atStartOfDay(KST).toOffsetDateTime());
+            return cb.lessThan(path, KstDays.startOfNext(to));
         };
     }
 

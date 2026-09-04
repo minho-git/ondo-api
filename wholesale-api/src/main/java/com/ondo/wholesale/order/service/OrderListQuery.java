@@ -1,14 +1,12 @@
 package com.ondo.wholesale.order.service;
 
 import com.ondo.wholesale.common.error.ApiException;
-import com.ondo.wholesale.common.error.ErrorCode;
-import com.ondo.wholesale.common.error.ErrorResponse;
+import com.ondo.wholesale.common.web.SortParser;
 import com.ondo.wholesale.order.OrderFilterKey;
 import com.ondo.wholesale.order.SettlementStatus;
 import org.springframework.data.domain.Sort;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,13 +31,13 @@ public record OrderListQuery(OrderFilterKey filter, String q, Long retailerId,
                                     String settlementStatus, LocalDate from, LocalDate to,
                                     int page, int size, String sort) {
         if (size > MAX_PAGE_SIZE) {
-            throw validationFailed("size", "size 는 최대 " + MAX_PAGE_SIZE + " 이다.");
+            throw ApiException.validationFailed("size", "size 는 최대 " + MAX_PAGE_SIZE + " 이다.");
         }
         if (from != null && to != null && from.isAfter(to)) {
-            throw validationFailed("from", "from 이 to 보다 뒤일 수 없다.");
+            throw ApiException.validationFailed("from", "from 이 to 보다 뒤일 수 없다.");
         }
         return new OrderListQuery(filter, q, retailerId, parseSettlementStatus(settlementStatus),
-                from, to, page, size, parseSort(sort));
+                from, to, page, size, SortParser.parse(sort, "orderedAt,desc", SORT_KEYS));
     }
 
     private static SettlementStatus parseSettlementStatus(String raw) {
@@ -49,27 +47,7 @@ public record OrderListQuery(OrderFilterKey filter, String q, Long retailerId,
         try {
             return SettlementStatus.valueOf(raw);
         } catch (IllegalArgumentException e) {
-            throw validationFailed("settlementStatus", "정의되지 않은 정산 상태: " + raw);
+            throw ApiException.validationFailed("settlementStatus", "정의되지 않은 정산 상태: " + raw);
         }
-    }
-
-    /** "필드,방향" 또는 "필드". 페이지 경계 안정화를 위해 id 를 타이브레이커로 붙인다. */
-    private static Sort parseSort(String sort) {
-        String raw = (sort == null || sort.isBlank()) ? "orderedAt,desc" : sort;
-        String[] parts = raw.split(",", 2);
-        String property = SORT_KEYS.get(parts[0].trim());
-        Sort.Direction direction = (parts.length < 2) ? Sort.Direction.ASC
-                : "desc".equalsIgnoreCase(parts[1].trim()) ? Sort.Direction.DESC
-                : "asc".equalsIgnoreCase(parts[1].trim()) ? Sort.Direction.ASC
-                : null;
-        if (property == null || direction == null) {
-            throw validationFailed("sort", "지원하지 않는 정렬: " + raw);
-        }
-        return Sort.by(direction, property).and(Sort.by(Sort.Direction.DESC, "id"));
-    }
-
-    private static ApiException validationFailed(String field, String reason) {
-        return new ApiException(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultMessage(),
-                List.of(new ErrorResponse.FieldError(field, reason)));
     }
 }
