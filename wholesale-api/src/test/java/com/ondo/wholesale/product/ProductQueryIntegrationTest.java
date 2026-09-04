@@ -192,6 +192,30 @@ class ProductQueryIntegrationTest extends PostgresTestSupport {
     }
 
     @Test
+    void 미송이_걸린_variant는_상세에_backorderQty가_내려온다() throws Exception {
+        long id = 게시글까지_등록한다("미송 상품", 121, "미송 게시"); // 블랙 S·M
+        long variantS = jdbc.queryForObject(
+                "select id from wholesale.variant where product_id = ? and size = 'S'", Long.class, id);
+        long partnerId = jdbc.queryForObject(
+                "insert into wholesale.partner (wholesaler_id, retailer_id, retailer_name) values (?, 1, '소매상') returning id",
+                Long.class, wholesalerId);
+        long orderId = jdbc.queryForObject(
+                "insert into wholesale.orders (order_number, partner_id, wholesaler_id, status, payment_term, receive_method, ordered_at)"
+                        + " values (1, ?, ?, 'CONFIRMED', 'CASH', 'PICKUP', now()) returning id",
+                Long.class, partnerId, wholesalerId);
+        long orderItemId = jdbc.queryForObject(
+                "insert into wholesale.order_item (order_id, variant_id, qty, unit_price) values (?, ?, 4, 29000) returning id",
+                Long.class, orderId, variantS);
+        jdbc.update("insert into wholesale.backorder (order_item_id, qty, status) values (?, 4, 'OPEN')", orderItemId);
+
+        mvc.perform(get("/api/wholesale/products/" + id).with(TestSecuritySupport.approvedAs(wholesalerId)))
+                .andExpect(jsonPath("$.data.colorOptions[0].variants[0].backorderQty").value(4))
+                .andExpect(jsonPath("$.data.colorOptions[0].variants[1].backorderQty").value(0))
+                // 미송은 availableQty 에서 빼지 않는다 (계약)
+                .andExpect(jsonPath("$.data.colorOptions[0].variants[0].availableQty").value(0));
+    }
+
+    @Test
     void 타_도매처_상품_상세는_404다() throws Exception {
         long id = 상품을_등록한다("내 상품", 121);
         long other = MasterDataFixture.도매처를_넣는다(jdbc, "other-d@ondo.test", "9400000003");
