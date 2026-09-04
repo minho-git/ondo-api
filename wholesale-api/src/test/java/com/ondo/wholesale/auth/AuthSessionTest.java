@@ -128,17 +128,23 @@ class AuthSessionTest extends PostgresTestSupport {
     @Test
     void 로그아웃하면_세션_행이_사라진다() throws Exception {
         String 쿠키 = 세션쿠키(post("/api/wholesale/auth/login", 로그인_본문, null));
-        assertThat(세션_행수()).isEqualTo(1);
+        assertThat(세션_행수(쿠키)).isEqualTo(1);
 
         post("/api/wholesale/auth/logout", "", 쿠키);
 
-        assertThat(세션_행수()).isZero();
+        assertThat(세션_행수(쿠키)).isZero();
     }
 
     // ── 도구 ────────────────────────────────
 
-    private Integer 세션_행수() {
-        return jdbc.queryForObject("select count(*) from wholesale.spring_session", Integer.class);
+    /**
+     * 로그인 때 받은 쿠키의 세션 행만 센다 — 테이블 전체 count 는 다른 테스트가
+     * 남기거나 지운 행에 흔들린다(간헐 실패의 유력 원인). 쿠키 값은 세션 id 의 base64 다.
+     */
+    private Integer 세션_행수(String 쿠키) {
+        String sessionId = new String(java.util.Base64.getDecoder().decode(쿠키.split("=", 2)[1]));
+        return jdbc.queryForObject(
+                "select count(*) from wholesale.spring_session where session_id = ?", Integer.class, sessionId);
     }
 
     private String 세션쿠키(HttpResponse<String> 응답) {
