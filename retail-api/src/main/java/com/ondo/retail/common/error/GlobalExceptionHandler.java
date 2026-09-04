@@ -1,5 +1,6 @@
 package com.ondo.retail.common.error;
 
+import com.ondo.retail.wholesale.WholesaleApiException;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -118,6 +119,24 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUploadSize(MaxUploadSizeExceededException e) {
         ErrorCode code = ErrorCode.FILE_TOO_LARGE;
         log.warn("[{}] {}", code.name(), e.getMessage());
+        return ResponseEntity.status(code.status())
+                .body(ErrorResponse.of(code, traceId()));
+    }
+
+    /**
+     * 도매를 부르다 실패했다 (MUL-88). 도매가 안 떠 있거나 · 느리거나 · 5xx 를 준 경우다.
+     *
+     * <p>소매 잘못이 아니라서 사용자에겐 "잠시 후 다시" 로 나가지만, <b>원인은 반드시
+     * 남긴다.</b> 아래 catch-all 에 맡기면 "처리하지 못한 예외" 로 찍혀서 소매 버그와
+     * 도매 장애를 로그에서 구분할 수 없다.
+     *
+     * <p>상태 코드를 500 으로 둔 건 아직 정한 게 없어서다. 도매 장애를 프론트가
+     * 따로 그려야 하면 전용 코드(503)를 그때 판다 — 숙제.
+     */
+    @ExceptionHandler(WholesaleApiException.class)
+    public ResponseEntity<ErrorResponse> handleWholesaleApi(WholesaleApiException e) {
+        ErrorCode code = ErrorCode.INTERNAL_ERROR;
+        log.error("도매 호출 실패", e);
         return ResponseEntity.status(code.status())
                 .body(ErrorResponse.of(code, traceId()));
     }

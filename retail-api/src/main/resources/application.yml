@@ -50,3 +50,16 @@ management:
       probes:
         enabled: true
       show-details: never   # {"status":"UP"} 만 나간다. DB 종류·디스크 용량이 새지 않게
+
+# 도매 서버 (MUL-88). 상품·미송·주문이 전부 이 주소로 나간다.
+#
+# 소매 DB 에는 상품이 없다. 도매가 안 뜨면 상품 화면이 못 뜬다 — 그래서 타임아웃을
+# 반드시 준다. 안 주면 무한 대기라 도매가 느린 동안 소매 톰캣 스레드가 하나씩 잠기고,
+# 도매 장애가 소매 전체 장애로 번진다.
+#
+# 기본값은 로컬이다. 배포는 application-prod.yml 이 환경변수로 덮는다 (MUL-87).
+ondo:
+  wholesale:
+    base-url: http://localhost:8081
+    connect-timeout: 2s    # 연결까지. 도매가 아예 안 떠 있으면 여기서 끊긴다
+    read-timeout: 5s       # 응답까지. 받아놓고 안 주는 경우를 끊는다

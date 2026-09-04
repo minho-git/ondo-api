@@ -26,9 +26,9 @@ import org.springframework.web.bind.annotation.RestController;
  * 상품 조회. 승인된 소매처만 부를 수 있다 — 승인 검사는 SecurityConfig 가 앞에서 한다.
  *
  * <p>데이터는 전부 도매 것이라 {@link ListingClient} 를 통해 가져온다.
- * 지금은 목이고, 내부 API 가 준비되면 구현체만 갈아끼운다.
+ * 소매 DB 에는 상품이 없다 — 매 요청 도매를 부른다.
  */
-@Tag(name = "상품", description = "도매 상품을 둘러본다. 도매 데이터라 지금은 목이다 — 응답 모양은 확정.")
+@Tag(name = "상품", description = "도매 상품을 둘러본다.")
 @RestController
 @RequestMapping("/api/retail")
 @RequiredArgsConstructor
