@@ -71,6 +71,14 @@ resource "aws_ecs_service" "wholesale" {
     container_port   = 8081
   }
 
+  # 내부 ALB 에도 자기를 등록한다 (MUL-87). 타깃그룹 하나는 로드밸런서 하나에만
+  # 붙으므로, 같은 태스크를 두 타깃그룹에 넣는 방식으로 두 ALB 를 받는다
+  load_balancer {
+    target_group_arn = aws_lb_target_group.wholesale_internal.arn
+    container_name   = "wholesale"
+    container_port   = 8081
+  }
+
   health_check_grace_period_seconds = local.health_grace
 
   deployment_circuit_breaker {
@@ -78,7 +86,7 @@ resource "aws_ecs_service" "wholesale" {
     rollback = true
   }
 
-  depends_on = [aws_lb_listener_rule.wholesale]
+  depends_on = [aws_lb_listener_rule.wholesale, aws_lb_listener_rule.internal_retail_gateway]
 
   tags = { Name = "${local.prefix}-wholesale" }
 }
