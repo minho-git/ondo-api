@@ -13,3 +13,12 @@ server:
     session:
       cookie:
         secure: true   # 배포는 https 다. 이걸 안 켜면 쿠키가 http 로도 나간다
+
+# 소매 접점 시크릿 (MUL-87).
+#
+# 끝에 `:` 를 안 붙인다. CORS·도매주소와 정반대다 — 그것들은 없으면 기능 하나가
+# 멈추고 끝이지만, 이건 없으면 소매 접점이 누구에게나 열린다. 그럴 바에는
+# 기동을 실패시키는 게 낫다. ECS 배포 회로차단기가 이전 태스크로 되돌린다.
+ondo:
+  gateway:
+    secret: ${ONDO_GATEWAY_SECRET}

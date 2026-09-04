@@ -1,8 +1,10 @@
 package com.ondo.wholesale.config;
 
+import com.ondo.wholesale.retailgateway.GatewaySecretAuthorizationManager;
 import com.ondo.wholesale.security.ApprovedAuthorizationManager;
 import com.ondo.wholesale.security.RestAccessDeniedHandler;
 import com.ondo.wholesale.security.RestAuthenticationEntryPoint;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -23,6 +25,7 @@ import org.springframework.security.web.context.SecurityContextRepository;
  *   <li>{@code /api/wholesale/auth/**}(signup·login) → 비인증 허용</li>
  *   <li>{@code GET /me} · {@code POST /me/reapply} → 세션만(1단) 통과 — 심사 현황 확인용</li>
  *   <li>그 외 → 세션(1단) + APPROVED(2단) 모두 필요</li>
+ *   <li>{@code /api/retail-gateway/**} → 세션이 아니라 시크릿 헤더로 확인 (MUL-87)</li>
  * </ul>
  */
 @Configuration
@@ -34,6 +37,7 @@ public class SecurityConfig {
                                     RestAuthenticationEntryPoint authenticationEntryPoint,
                                     RestAccessDeniedHandler accessDeniedHandler,
                                     ApprovedAuthorizationManager approvedAuthorizationManager,
+                                    GatewaySecretAuthorizationManager gatewaySecretAuthorizationManager,
                                     SecurityContextRepository securityContextRepository) throws Exception {
         http
                 // CSRF: MUL-45 인프라 협의 대기(SameSite vs 토큰). 협의 후 별도 활성화 — TODO
@@ -53,10 +57,11 @@ public class SecurityConfig {
                         // 헬스체크(MUL-76) — ALB 가 부른다. 401 이 나가면 배포가 영영 안 된다.
                         // 하위까지 여는 건 ALB 가 실제로 보는 게 /actuator/health/liveness 여서다.
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                        // 소매 접점(MUL-82) — 인증 주체가 소매 백엔드라 도매 세션 밖.
-                        // 인증 축이 미확정(U-14-B2: 서비스 간 토큰 vs 소매 사용자 토큰 검증)이라
-                        // 결정 전까지 잠정 permitAll. 결정되면 전용 필터/매니저로 교체한다.
-                        .requestMatchers("/api/retail-gateway/**").permitAll()
+                        // 소매 접점(MUL-82·87) — 부르는 게 사람이 아니라 소매 백엔드라
+                        // 도매 세션이 없다. 양쪽이 나눠 가진 시크릿 헤더로 확인한다.
+                        // 이 경로는 내부 ALB 로만 들어오지만 네트워크만 믿지는 않는다 —
+                        // VPC 안이 뚫렸을 때 도매 데이터가 통째로 열리는 걸 막는다.
+                        .requestMatchers("/api/retail-gateway/**").access(gatewaySecretAuthorizationManager)
                         .requestMatchers(HttpMethod.GET, "/api/wholesale/me").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/wholesale/me/reapply").authenticated()
                         .anyRequest().access(approvedAuthorizationManager))
@@ -68,6 +73,19 @@ public class SecurityConfig {
                 .httpBasic(basic -> basic.disable())
                 .logout(logout -> logout.disable());
         return http.build();
+    }
+
+    /**
+     * 소매 접점의 시크릿 문지기 (MUL-87).
+     *
+     * <p>여기서 만드는 이유 — {@code @Component} 로 두면 {@code @Import(SecurityConfig.class)}
+     * 하는 테스트들이 이 빈을 각자 적어줘야 한다. 보안 설정에 뭘 하나 더할 때마다
+     * 남의 테스트가 같이 깨지는 건 좋지 않다.
+     */
+    @Bean
+    GatewaySecretAuthorizationManager gatewaySecretAuthorizationManager(
+            @Value("${ondo.gateway.secret:}") String secret) {
+        return new GatewaySecretAuthorizationManager(secret);
     }
 
     /**

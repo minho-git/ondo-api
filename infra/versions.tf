@@ -8,6 +8,14 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0" # 6.x 는 허용, 7.0 은 막는다
     }
+
+    # 소매 접점 시크릿을 만드는 데 쓴다 (MUL-87).
+    # 값이 state 에 남는다 — 지금 state 가 로컬이라 이 파일이 곧 비밀이다.
+    # S3 백엔드로 옮길 때 암호화를 같이 켜야 한다
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 
   # state(만든 것의 기록)는 지금 로컬이다.

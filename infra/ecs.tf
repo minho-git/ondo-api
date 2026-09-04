@@ -71,6 +71,14 @@ locals {
   # 앱은 그냥 환경변수로 받는다 — application-prod.yml 이 이미 그렇게 돼 있다
   retail_secret    = "${aws_db_instance.retail.master_user_secret[0].secret_arn}:password::"
   wholesale_secret = "${aws_db_instance.wholesale.master_user_secret[0].secret_arn}:password::"
+
+  # 소매 접점 시크릿 (MUL-87). 문자열 하나를 통째로 넣은 것이라
+  # 위와 달리 뒤에 `:키::` 를 안 붙인다
+  gateway_secret = aws_secretsmanager_secret.gateway.arn
+
+  # 소매가 도매를 부르는 주소. HTTP 다 — VPC 안에서만 도는 트래픽이라
+  # 인증서를 붙이지 않았다(alb_internal.tf)
+  wholesale_base_url = "http://${aws_lb.internal.dns_name}"
 }
 
 resource "aws_ecs_task_definition" "retail" {
@@ -112,10 +120,14 @@ resource "aws_ecs_task_definition" "retail" {
       { name = "DB_URL", value = "jdbc:postgresql://${aws_db_instance.retail.endpoint}/ondo_retail" },
       { name = "DB_USERNAME", value = "ondo" },
       { name = "CORS_ALLOWED_ORIGINS", value = var.retail_cors_origins },
+      # 도매를 부르는 주소 (MUL-87). 내부 ALB 다
+      { name = "WHOLESALE_BASE_URL", value = local.wholesale_base_url },
     ]
 
     secrets = [
       { name = "DB_PASSWORD", valueFrom = local.retail_secret },
+      # 도매를 부를 때 헤더에 실을 값 (MUL-87)
+      { name = "ONDO_GATEWAY_SECRET", valueFrom = local.gateway_secret },
     ]
 
     logConfiguration = {
@@ -172,6 +184,9 @@ resource "aws_ecs_task_definition" "wholesale" {
 
     secrets = [
       { name = "DB_PASSWORD", valueFrom = local.wholesale_secret },
+      # 소매가 보낸 헤더를 대조할 값 (MUL-87). 없으면 앱이 안 뜬다 —
+      # 시크릿을 빠뜨린 채 소매 접점이 열려 있는 것보다 낫다
+      { name = "ONDO_GATEWAY_SECRET", valueFrom = local.gateway_secret },
     ]
 
     logConfiguration = {

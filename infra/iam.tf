@@ -52,6 +52,21 @@ resource "aws_iam_role_policy" "exec_retail_secret" {
   policy = data.aws_iam_policy_document.read_retail_secret.json
 }
 
+# 소매 접점 시크릿 (MUL-87). 소매와 도매가 같은 값을 읽는다 —
+# 나눠 갖는 비밀이라 양쪽 다 필요하다. DB 시크릿과 달리 서로의 것이 아니다
+data "aws_iam_policy_document" "read_gateway_secret" {
+  statement {
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_secretsmanager_secret.gateway.arn]
+  }
+}
+
+resource "aws_iam_role_policy" "exec_retail_gateway_secret" {
+  name   = "read-gateway-secret"
+  role   = aws_iam_role.exec_retail.id
+  policy = data.aws_iam_policy_document.read_gateway_secret.json
+}
+
 # ── 실행 역할 · 도매 ─────────────────────────────────────────
 resource "aws_iam_role" "exec_wholesale" {
   name               = "${local.prefix}-exec-wholesale"
@@ -75,6 +90,12 @@ resource "aws_iam_role_policy" "exec_wholesale_secret" {
   name   = "read-wholesale-db-secret"
   role   = aws_iam_role.exec_wholesale.id
   policy = data.aws_iam_policy_document.read_wholesale_secret.json
+}
+
+resource "aws_iam_role_policy" "exec_wholesale_gateway_secret" {
+  name   = "read-gateway-secret"
+  role   = aws_iam_role.exec_wholesale.id
+  policy = data.aws_iam_policy_document.read_gateway_secret.json
 }
 
 # ── 태스크 역할 · 소매 ───────────────────────────────────────
