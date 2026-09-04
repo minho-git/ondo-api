@@ -155,7 +155,6 @@ class WholesaleListingAdapterTest {
                             "colorOptions": [
                               {
                                 "color": {"id":7,"name":"체리레드","hex":"#C0392B","groupName":"레드"},
-                                "imageUrl": "red.jpg",
                                 "variants": [ {"id":3001,"size":"S","salePrice":12500,"orderLimit":500} ]
                               }
                             ],

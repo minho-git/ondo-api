@@ -207,7 +207,6 @@ public class WholesaleListingAdapter implements ListingClient {
                         source.color().name(),
                         source.color().hex(),
                         source.color().groupName()),
-                source.imageUrl(),
                 source.variants().stream()
                         .map(v -> new ListingDetailResponse.Variant(v.id(), v.size(), v.salePrice(), v.orderLimit()))
                         .toList());
