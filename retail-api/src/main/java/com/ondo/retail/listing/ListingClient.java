@@ -15,10 +15,11 @@ import org.springframework.data.domain.Pageable;
  * 도매에서 상품 정보를 가져오는 통로.
  *
  * <p>상품은 전부 도매 것이고 DB 가 갈라져 있어서 소매가 직접 못 읽는다.
- * 지금은 {@link MockListingClient} 가 가짜 값을 돌려주고,
- * 도매 시드와 내부 API 가 준비되면 {@code /api/internal/**} 을 부르는 구현체로 갈아끼운다.
+ * 도매의 {@code /api/retail-gateway/**} 를 부르는
+ * {@code com.ondo.retail.wholesale.listing.WholesaleListingAdapter} 가 구현한다 (MUL-88).
  *
- * <p>응답 모양이 명세 그대로라 갈아끼울 때 컨트롤러와 DTO 는 안 고친다.
+ * <p><b>인터페이스가 여기 남아 있는 이유</b> — 이 패키지는 상대가 누구인지, HTTP 인지를
+ * 몰라야 한다. 앞에 캐시를 끼우거나 도매가 부르는 방식을 바꿔도 여기는 안 고친다.
  */
 public interface ListingClient {
 
