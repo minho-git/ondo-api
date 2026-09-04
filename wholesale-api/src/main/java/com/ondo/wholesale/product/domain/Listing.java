@@ -100,6 +100,36 @@ public class Listing {
         }
     }
 
+    /** ON_SALE → SEASON_ENDED. 전이 가능 여부 검증은 서비스가 한다. */
+    public void endSeason() {
+        this.status = ListingStatus.SEASON_ENDED;
+        this.seasonEndedAt = OffsetDateTime.now();
+    }
+
+    /** SEASON_ENDED → ON_SALE. seasonStartedAt 은 재개 시각으로 갱신된다. */
+    public void reopen() {
+        this.status = ListingStatus.ON_SALE;
+        this.seasonStartedAt = OffsetDateTime.now();
+        this.seasonEndedAt = null;
+    }
+
+    public void softDelete() {
+        this.deletedAt = OffsetDateTime.now();
+    }
+
+    public void updateTitle(String title) {
+        this.title = title;
+    }
+
+    /** null 로 지운다 — PATCH 에서 빈 문자열이 "지움"으로 들어온다. */
+    public void updateDescription(String description) {
+        this.description = description;
+    }
+
+    public void updateSinglePieceAllowed(boolean singlePieceAllowed) {
+        this.singlePieceAllowed = singlePieceAllowed;
+    }
+
     public List<ListingImage> getImages() {
         return Collections.unmodifiableList(images);
     }

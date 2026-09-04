@@ -1,6 +1,9 @@
 package com.ondo.wholesale.product.controller;
 
 import com.ondo.wholesale.common.error.ApiException;
+import com.ondo.wholesale.product.dto.response.ProductDetailResponse;
+
+import java.util.List;
 import com.ondo.wholesale.common.error.ErrorCode;
 import com.ondo.wholesale.common.error.ErrorResponseWriter;
 import com.ondo.wholesale.common.error.GlobalExceptionHandler;
@@ -74,7 +77,8 @@ class ProductCreateApiTest {
 
     @Test
     void 등록은_201로_data봉투에_상세를_담는다() throws Exception {
-        when(productCommandService.create(eq(1L), any())).thenReturn(ProductStubExamples.productDetail());
+        when(productCommandService.create(eq(1L), any())).thenReturn(new ProductDetailResponse(
+                5012L, 18, "오버핏 코튼 티셔츠", List.of(), List.of(), null));
 
         mvc.perform(post("/api/wholesale/products").with(TestSecuritySupport.approved())
                         .contentType(MediaType.APPLICATION_JSON)

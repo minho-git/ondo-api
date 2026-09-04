@@ -1,5 +1,7 @@
 package com.ondo.wholesale.product.service;
 
+import com.ondo.wholesale.common.error.ApiException;
+import com.ondo.wholesale.common.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -22,6 +24,51 @@ import java.util.Map;
 public class VariantUsageChecker {
 
     private final NamedParameterJdbcTemplate jdbc;
+
+    /**
+     * 삭제 후보 variant 들이 지워도 되는 상태인지 일괄 검사한다. 하나라도 걸리면 예외 —
+     * 호출자는 이 검사를 통과했을 때만 soft delete 를 실행해 부분 삭제를 막는다.
+     *
+     * <p>검사 순서는 계약(@Operation) 나열 순서로 고정한다 — 여러 조건에 동시에 걸려도
+     * 응답 코드가 흔들리지 않는다:
+     * <ol>
+     *   <li>variant.stock_qty &gt; 0 → {@code VARIANT_HAS_STOCK}</li>
+     *   <li>variant.reserved_qty &gt; 0 → {@code VARIANT_ALLOCATED}</li>
+     *   <li>OPEN 미송 존재 (backorder ⋈ order_item) → {@code VARIANT_HAS_BACKORDER}</li>
+     *   <li>NEW·CONFIRMED 주문에 포함 (order_item ⋈ orders) → {@code VARIANT_IN_PENDING_ORDER}</li>
+     * </ol>
+     * 주문(MUL-47)·미송(MUL-48) 티켓이 상태 규칙을 바꾸면 이 SQL 만 고친다.
+     */
+    public void ensureDeletable(Collection<Long> variantIds) {
+        if (variantIds.isEmpty()) {
+            return;
+        }
+        Map<String, ?> params = Map.of("ids", variantIds);
+        if (exists("select 1 from wholesale.variant where id in (:ids) and stock_qty > 0", params)) {
+            throw new ApiException(ErrorCode.VARIANT_HAS_STOCK);
+        }
+        if (exists("select 1 from wholesale.variant where id in (:ids) and reserved_qty > 0", params)) {
+            throw new ApiException(ErrorCode.VARIANT_ALLOCATED);
+        }
+        if (exists("""
+                select 1 from wholesale.backorder b
+                join wholesale.order_item oi on oi.id = b.order_item_id
+                where b.status = 'OPEN' and oi.variant_id in (:ids)
+                """, params)) {
+            throw new ApiException(ErrorCode.VARIANT_HAS_BACKORDER);
+        }
+        if (exists("""
+                select 1 from wholesale.order_item oi
+                join wholesale.orders o on o.id = oi.order_id
+                where o.status in ('NEW', 'CONFIRMED') and oi.variant_id in (:ids)
+                """, params)) {
+            throw new ApiException(ErrorCode.VARIANT_IN_PENDING_ORDER);
+        }
+    }
+
+    private boolean exists(String sql, Map<String, ?> params) {
+        return !jdbc.queryForList(sql + " limit 1", params, Integer.class).isEmpty();
+    }
 
     /** variant id → 미해소 미송 수량. 미송 없는 variant 는 키 자체가 없다. */
     public Map<Long, Integer> backorderQtyByVariant(Collection<Long> variantIds) {

@@ -1,38 +1,29 @@
 package com.ondo.wholesale.product.service;
 
-import com.ondo.wholesale.common.error.ApiException;
-import com.ondo.wholesale.common.error.ErrorCode;
-import com.ondo.wholesale.common.error.ErrorResponse;
+import com.ondo.wholesale.common.error.ResourceNotFoundException;
 import com.ondo.wholesale.master.domain.Color;
 import com.ondo.wholesale.master.service.CategoryTree;
-
 import com.ondo.wholesale.product.domain.ColorOption;
-import com.ondo.wholesale.product.domain.Listing;
-import com.ondo.wholesale.product.domain.ListingVariant;
 import com.ondo.wholesale.product.domain.Product;
 import com.ondo.wholesale.product.domain.Size;
-import com.ondo.wholesale.product.domain.Variant;
 import com.ondo.wholesale.product.dto.request.ColorOptionRequest;
-import com.ondo.wholesale.product.dto.request.ListingUpsertRequest;
 import com.ondo.wholesale.product.dto.request.ProductCreateRequest;
+import com.ondo.wholesale.product.dto.request.ProductUpdateRequest;
 import com.ondo.wholesale.product.dto.response.ProductDetailResponse;
-import com.ondo.wholesale.product.dto.request.VariantPriceRequest;
-import com.ondo.wholesale.product.repository.ListingRepository;
-import com.ondo.wholesale.product.repository.ListingVariantRepository;
 import com.ondo.wholesale.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
- * 상품 쓰기 유스케이스 (MUL-91: 등록).
+ * 상품 쓰기 유스케이스 (MUL-91 등록 · MUL-93 수정). 흐름만 여기 있고,
+ * 게시·가격 규칙은 {@link ListingWriter}, 옵션 전체 교체는 {@link ColorOptionDiffer}가 맡는다.
  *
  * <p>등록은 상품 + 색상옵션 + variant + (선택) 게시글·판매가를 한 트랜잭션에 만든다.
  * 품번은 {@link ProductNumberAllocator}가 wholesaler 행 락으로 직렬화해 발급한다.
+ * 수정·삭제는 잠금 조회로 동시 수정·variant_seq 채번 경합을 직렬화한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -40,11 +31,13 @@ import java.util.Map;
 public class ProductCommandService {
 
     private final ProductRepository productRepository;
-    private final ListingRepository listingRepository;
-    private final ListingVariantRepository listingVariantRepository;
+    private final com.ondo.wholesale.product.repository.ListingRepository listingRepository;
+    private final VariantUsageChecker variantUsageChecker;
     private final ProductOptionValidator productOptionValidator;
     private final ProductNumberAllocator productNumberAllocator;
     private final CategoryTree categoryTree;
+    private final ListingWriter listingWriter;
+    private final ColorOptionDiffer colorOptionDiffer;
     private final ProductDetailAssembler productDetailAssembler;
 
     public ProductDetailResponse create(Long wholesalerId, ProductCreateRequest request) {
@@ -66,71 +59,55 @@ public class ProductCommandService {
         productRepository.save(product);
 
         if (request.listing() != null) {
-            createListing(product, request.listing());
+            listingWriter.create(product, request.listing(), true);
         }
         return productDetailAssembler.assemble(product);
     }
 
-    private void createListing(Product product, ListingUpsertRequest request) {
-        if (request.title() == null || request.title().isBlank()) {
-            throw new ApiException(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultMessage(),
-                    List.of(new ErrorResponse.FieldError("listing.title", "게시글 제목은 비울 수 없습니다.")));
-        }
-        Listing listing = Listing.builder()
-                .product(product)
-                .title(request.title())
-                .description(request.description())
-                .singlePieceAllowed(Boolean.TRUE.equals(request.isSinglePieceAllowed()))
-                .build();
-        listing.replaceImages(request.images());
-        listingRepository.save(listing);
+    /** 상품 수정 (MUL-93). 생략 = 무변경. */
+    public ProductDetailResponse update(Long wholesalerId, Long productId, ProductUpdateRequest request) {
+        Product product = productRepository
+                .findWithLockByIdAndWholesalerIdAndDeletedAtIsNull(productId, wholesalerId)
+                .orElseThrow(() -> new ResourceNotFoundException("상품이 없거나 접근할 수 없습니다."));
 
-        savePrices(product, listing, request.variantPrices());
+        if (request.name() != null) {
+            product.rename(request.name().get().trim());
+        }
+        if (request.categoryId() != null) {
+            categoryTree.requireLeaf(request.categoryId().get());
+            product.changeCategory(request.categoryId().get());
+        }
+        if (request.colorOptions() != null) {
+            colorOptionDiffer.replace(product, request.colorOptions().get());
+        }
+        if (request.listing() != null) {
+            listingWriter.upsert(product, request.listing().get());
+        }
+        listingWriter.verifyPriceCoverage(product);
+        return productDetailAssembler.assemble(product);
     }
 
     /**
-     * 판매가 저장 — 등록에선 전 variant 가 신규라 (colorId, size) 지정만 허용한다.
-     * 살아있는 전 variant 를 정확히 1건씩 덮어야 한다: 누락 = PRICE_REQUIRED,
-     * 없는 조합 지시 = INVARIANT_VIOLATED, 중복·variantId 지정 = VALIDATION_FAILED.
+     * 상품 삭제 (MUL-94) — 게시글 동반 soft delete, 품번은 영구 결번(D-004).
+     * 살아있는 전 variant 가 삭제 가능해야 통과한다(일괄 409) — 일부만 걸려도 아무것도 안 지운다.
+     * 지우는 건 살아있는 variant 뿐이다 — 이미 죽은 variant 의 삭제 시각은 보존한다.
      */
-    private void savePrices(Product product, Listing listing, List<VariantPriceRequest> prices) {
-        Map<String, Variant> aliveByColorAndSize = new HashMap<>();
-        product.getColorOptions().forEach(option -> option.getVariants().stream()
-                .filter(Variant::isAlive)
-                .forEach(v -> aliveByColorAndSize.put(
-                        key(option.getColor().getId(), v.getSize()), v)));
+    public void delete(Long wholesalerId, Long productId) {
+        Product product = productRepository
+                .findWithLockByIdAndWholesalerIdAndDeletedAtIsNull(productId, wholesalerId)
+                .orElseThrow(() -> new ResourceNotFoundException("상품이 없거나 접근할 수 없습니다."));
 
-        Map<Long, VariantPriceRequest> covered = new HashMap<>();
-        for (VariantPriceRequest price : prices) {
-            if (price.variantId() != null) {
-                throw new ApiException(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultMessage(),
-                        List.of(new ErrorResponse.FieldError("listing.variantPrices.variantId",
-                                "등록에서는 variantId 를 지정할 수 없습니다.")));
-            }
-            if (price.colorId() == null || price.size() == null) {
-                throw new ApiException(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultMessage(),
-                        List.of(new ErrorResponse.FieldError("listing.variantPrices",
-                                "colorId 와 size 를 함께 지정해야 합니다.")));
-            }
-            Variant variant = aliveByColorAndSize.get(key(price.colorId(), price.size()));
-            if (variant == null) {
-                throw new ApiException(ErrorCode.INVARIANT_VIOLATED);
-            }
-            if (covered.put(variant.getId(), price) != null) {
-                throw new ApiException(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultMessage(),
-                        List.of(new ErrorResponse.FieldError("listing.variantPrices", "같은 variant 를 두 번 덮었습니다.")));
-            }
+        java.util.List<com.ondo.wholesale.product.domain.Variant> alive = product.getColorOptions().stream()
+                .flatMap(option -> option.getVariants().stream())
+                .filter(com.ondo.wholesale.product.domain.Variant::isAlive)
+                .toList();
+        if (!alive.isEmpty()) {
+            variantUsageChecker.ensureDeletable(alive.stream()
+                    .map(com.ondo.wholesale.product.domain.Variant::getId).toList());
+            alive.forEach(com.ondo.wholesale.product.domain.Variant::softDelete);
         }
-        if (covered.size() < aliveByColorAndSize.size()) {
-            throw new ApiException(ErrorCode.PRICE_REQUIRED);
-        }
-        covered.forEach((variantId, price) -> listingVariantRepository.save(ListingVariant.builder()
-                .listingId(listing.getId()).variantId(variantId)
-                .salePrice(price.salePrice()).orderLimit(price.orderLimit())
-                .build()));
-    }
-
-    private String key(Long colorId, Size size) {
-        return colorId + "/" + size.name();
+        listingRepository.findByProductIdAndDeletedAtIsNull(product.getId())
+                .ifPresent(com.ondo.wholesale.product.domain.Listing::softDelete);
+        product.softDelete();
     }
 }

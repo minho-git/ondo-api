@@ -12,6 +12,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ProductErrorCodeTest {
 
     @Test
+    void TRANSITION_NOT_ALLOWED는_CONFLICT다() {
+        assertThat(ErrorCode.TRANSITION_NOT_ALLOWED.status()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void variant_409군_코드는_전부_CONFLICT다() {
+        assertThat(new ErrorCode[]{
+                ErrorCode.VARIANT_HAS_STOCK, ErrorCode.VARIANT_ALLOCATED,
+                ErrorCode.VARIANT_HAS_BACKORDER, ErrorCode.VARIANT_IN_PENDING_ORDER,
+        }).allSatisfy(code -> assertThat(code.status()).isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
     void 상품_400군_코드는_전부_BAD_REQUEST다() {
         assertThat(new ErrorCode[]{
                 ErrorCode.CATEGORY_NOT_FOUND, ErrorCode.CATEGORY_NOT_LEAF,

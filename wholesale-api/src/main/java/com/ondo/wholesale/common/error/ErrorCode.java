@@ -39,6 +39,12 @@ public enum ErrorCode {
     OPTION_REQUIRED(HttpStatus.BAD_REQUEST, "색상 옵션과 사이즈는 1개 이상이어야 합니다."),
     PRICE_REQUIRED(HttpStatus.BAD_REQUEST, "게시하려면 모든 옵션의 판매가가 필요합니다."),
     INVARIANT_VIOLATED(HttpStatus.BAD_REQUEST, "요청이 상품 구성과 맞지 않습니다."),
+    // 재고·주문 쪽에 물려 있는 variant 는 못 지운다 — 화면이 항목별로 다른 안내를 띄운다
+    VARIANT_HAS_STOCK(HttpStatus.CONFLICT, "재고가 남아 있는 옵션은 뺄 수 없습니다."),
+    VARIANT_ALLOCATED(HttpStatus.CONFLICT, "포장 배분에 잡혀 있는 옵션은 뺄 수 없습니다."),
+    VARIANT_HAS_BACKORDER(HttpStatus.CONFLICT, "미송이 걸려 있는 옵션은 뺄 수 없습니다."),
+    VARIANT_IN_PENDING_ORDER(HttpStatus.CONFLICT, "처리 중인 주문에 들어 있는 옵션은 뺄 수 없습니다."),
+    TRANSITION_NOT_ALLOWED(HttpStatus.CONFLICT, "지금 상태에서는 할 수 없는 전환입니다."),
 
     // ── 로그인 (MUL-69) ──
     // 이메일이 없는 것과 비밀번호가 틀린 것을 구분하지 않는다. 나눠서 알려주면 밖에서
