@@ -93,6 +93,14 @@ public class Product {
         return ++lastVariantSeq;
     }
 
+    public void rename(String name) {
+        this.name = name;
+    }
+
+    public void changeCategory(Long categoryId) {
+        this.categoryId = categoryId;
+    }
+
     public List<ColorOption> getColorOptions() {
         return Collections.unmodifiableList(colorOptions);
     }

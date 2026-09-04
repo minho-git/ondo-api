@@ -3,6 +3,7 @@ package com.ondo.wholesale.product.service;
 import com.ondo.wholesale.common.error.ApiException;
 import com.ondo.wholesale.common.error.ErrorCode;
 import com.ondo.wholesale.common.error.ErrorResponse;
+import com.ondo.wholesale.common.error.ResourceNotFoundException;
 import com.ondo.wholesale.master.domain.Color;
 import com.ondo.wholesale.master.service.CategoryTree;
 
@@ -15,6 +16,7 @@ import com.ondo.wholesale.product.domain.Variant;
 import com.ondo.wholesale.product.dto.request.ColorOptionRequest;
 import com.ondo.wholesale.product.dto.request.ListingUpsertRequest;
 import com.ondo.wholesale.product.dto.request.ProductCreateRequest;
+import com.ondo.wholesale.product.dto.request.ProductUpdateRequest;
 import com.ondo.wholesale.product.dto.response.ProductDetailResponse;
 import com.ondo.wholesale.product.dto.request.VariantPriceRequest;
 import com.ondo.wholesale.product.repository.ListingRepository;
@@ -66,12 +68,12 @@ public class ProductCommandService {
         productRepository.save(product);
 
         if (request.listing() != null) {
-            createListing(product, request.listing());
+            createListing(product, request.listing(), true);
         }
         return productDetailAssembler.assemble(product);
     }
 
-    private void createListing(Product product, ListingUpsertRequest request) {
+    private void createListing(Product product, ListingUpsertRequest request, boolean creating) {
         if (request.title() == null || request.title().isBlank()) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultMessage(),
                     List.of(new ErrorResponse.FieldError("listing.title", "게시글 제목은 비울 수 없습니다.")));
@@ -79,40 +81,42 @@ public class ProductCommandService {
         Listing listing = Listing.builder()
                 .product(product)
                 .title(request.title())
-                .description(request.description())
+                .description(emptyToNull(request.description()))
                 .singlePieceAllowed(Boolean.TRUE.equals(request.isSinglePieceAllowed()))
                 .build();
         listing.replaceImages(request.images() == null ? List.of() : request.images());
         listingRepository.save(listing);
 
-        savePrices(product, listing, request.variantPrices() == null ? List.of() : request.variantPrices());
+        replacePrices(product, listing, request.variantPrices() == null ? List.of() : request.variantPrices(), creating);
     }
 
     /**
-     * 판매가 저장 — 등록에선 전 variant 가 신규라 (colorId, size) 지정만 허용한다.
-     * 살아있는 전 variant 를 정확히 1건씩 덮어야 한다: 누락 = PRICE_REQUIRED,
-     * 없는 조합 지시 = INVARIANT_VIOLATED, 중복·variantId 지정 = VALIDATION_FAILED.
+     * 판매가 전체 교체 — (요청 반영 후) 살아있는 전 variant 를 정확히 1건씩 덮어야 한다.
+     * 누락 = PRICE_REQUIRED, 이 상품의 살아있는 variant 로 해석 안 되는 지시(남의 variantId 포함)
+     * = INVARIANT_VIOLATED, 같은 variant 중복 = VALIDATION_FAILED.
+     * 지정 방식은 variantId 든 (colorId, size) 든 해석되면 허용한다(팀 결정 2026-09-04).
+     * 단 등록(creating)은 전부 신규라 variantId 지정 자체가 400 이다(계약).
      */
-    private void savePrices(Product product, Listing listing, List<VariantPriceRequest> prices) {
+    private void replacePrices(Product product, Listing listing, List<VariantPriceRequest> prices, boolean creating) {
         Map<String, Variant> aliveByColorAndSize = new HashMap<>();
+        Map<Long, Variant> aliveById = new HashMap<>();
         product.getColorOptions().forEach(option -> option.getVariants().stream()
                 .filter(Variant::isAlive)
-                .forEach(v -> aliveByColorAndSize.put(
-                        key(option.getColor().getId(), v.getSize()), v)));
+                .forEach(v -> {
+                    aliveByColorAndSize.put(key(option.getColor().getId(), v.getSize()), v);
+                    aliveById.put(v.getId(), v);
+                }));
 
         Map<Long, VariantPriceRequest> covered = new HashMap<>();
         for (VariantPriceRequest price : prices) {
-            if (price.variantId() != null) {
+            if (creating && price.variantId() != null) {
                 throw new ApiException(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultMessage(),
                         List.of(new ErrorResponse.FieldError("listing.variantPrices.variantId",
                                 "등록에서는 variantId 를 지정할 수 없습니다.")));
             }
-            if (price.colorId() == null || price.size() == null) {
-                throw new ApiException(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultMessage(),
-                        List.of(new ErrorResponse.FieldError("listing.variantPrices",
-                                "colorId 와 size 를 함께 지정해야 합니다.")));
-            }
-            Variant variant = aliveByColorAndSize.get(key(price.colorId(), price.size()));
+            Variant variant = (price.variantId() != null)
+                    ? aliveById.get(price.variantId())
+                    : aliveByColorAndSize.get(key(price.colorId(), price.size()));
             if (variant == null) {
                 throw new ApiException(ErrorCode.INVARIANT_VIOLATED);
             }
@@ -124,10 +128,72 @@ public class ProductCommandService {
         if (covered.size() < aliveByColorAndSize.size()) {
             throw new ApiException(ErrorCode.PRICE_REQUIRED);
         }
-        covered.forEach((variantId, price) -> listingVariantRepository.save(ListingVariant.builder()
-                .listingId(listing.getId()).variantId(variantId)
-                .salePrice(price.salePrice()).orderLimit(price.orderLimit())
-                .build()));
+        Map<Long, ListingVariant> existing = listingVariantRepository.findByIdListingId(listing.getId()).stream()
+                .collect(java.util.stream.Collectors.toMap(lv -> lv.getId().getVariantId(), lv -> lv));
+        covered.forEach((variantId, price) -> {
+            ListingVariant row = existing.get(variantId);
+            if (row != null) {
+                row.reprice(price.salePrice(), price.orderLimit());
+            } else {
+                listingVariantRepository.save(ListingVariant.builder()
+                        .listingId(listing.getId()).variantId(variantId)
+                        .salePrice(price.salePrice()).orderLimit(price.orderLimit())
+                        .build());
+            }
+        });
+    }
+
+    /** 상품 수정 (MUL-93). 생략 = 무변경. 잠금 조회로 동시 수정·채번 경합을 직렬화한다. */
+    public ProductDetailResponse update(Long wholesalerId, Long productId, ProductUpdateRequest request) {
+        Product product = productRepository
+                .findWithLockByIdAndWholesalerIdAndDeletedAtIsNull(productId, wholesalerId)
+                .orElseThrow(() -> new ResourceNotFoundException("상품이 없거나 접근할 수 없습니다."));
+
+        if (request.name() != null) {
+            product.rename(request.name().get().trim());
+        }
+        if (request.categoryId() != null) {
+            categoryTree.requireLeaf(request.categoryId().get());
+            product.changeCategory(request.categoryId().get());
+        }
+        // colorOptions 전체 교체 diff 는 다음 커밋(MUL-93 2단계)에서 붙는다
+        if (request.listing() != null) {
+            upsertListing(product, request.listing().get());
+        }
+        return productDetailAssembler.assemble(product);
+    }
+
+    /** 게시글 upsert — 없으면 생성 분기, 있으면 내부 필드별 "null = 무변경" 갱신. */
+    private void upsertListing(Product product, ListingUpsertRequest request) {
+        Listing listing = listingRepository.findByProductIdAndDeletedAtIsNull(product.getId()).orElse(null);
+        if (listing == null) {
+            createListing(product, request, false);
+            return;
+        }
+        if (request.title() != null) {
+            if (request.title().isBlank()) {
+                throw new ApiException(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultMessage(),
+                        List.of(new ErrorResponse.FieldError("listing.title", "게시글 제목은 비울 수 없습니다.")));
+            }
+            listing.updateTitle(request.title());
+        }
+        if (request.description() != null) {
+            listing.updateDescription(emptyToNull(request.description()));
+        }
+        if (request.isSinglePieceAllowed() != null) {
+            listing.updateSinglePieceAllowed(request.isSinglePieceAllowed());
+        }
+        if (request.images() != null) {
+            listing.replaceImages(request.images());
+        }
+        if (request.variantPrices() != null) {
+            replacePrices(product, listing, request.variantPrices(), false);
+        }
+    }
+
+    /** description 은 빈 문자열이 "지움"이다 — 저장은 null 로 한다. */
+    private String emptyToNull(String value) {
+        return (value == null || value.isEmpty()) ? null : value;
     }
 
     private String key(Long colorId, Size size) {

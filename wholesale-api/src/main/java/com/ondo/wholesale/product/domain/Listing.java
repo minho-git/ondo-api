@@ -100,6 +100,19 @@ public class Listing {
         }
     }
 
+    public void updateTitle(String title) {
+        this.title = title;
+    }
+
+    /** null 로 지운다 — PATCH 에서 빈 문자열이 "지움"으로 들어온다. */
+    public void updateDescription(String description) {
+        this.description = description;
+    }
+
+    public void updateSinglePieceAllowed(boolean singlePieceAllowed) {
+        this.singlePieceAllowed = singlePieceAllowed;
+    }
+
     public List<ListingImage> getImages() {
         return Collections.unmodifiableList(images);
     }

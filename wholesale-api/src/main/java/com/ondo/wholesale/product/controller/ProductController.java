@@ -31,8 +31,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * 상품 API — 원본 계약: api-lite/02_상품게시. 등록(MUL-91)·목록·상세(MUL-92)는 서비스 계층이
- * 처리하고, 수정·삭제는 아직 계약 스텁(MUL-81)이다 — MUL-93·94 가 교체한다.
+ * 상품 API — 원본 계약: api-lite/02_상품게시. 등록(MUL-91)·목록·상세(MUL-92)·수정(MUL-93)은
+ * 서비스 계층이 처리하고, 삭제는 아직 계약 스텁(MUL-81)이다 — MUL-94 가 교체한다.
  */
 @Tag(name = "02 상품·게시")
 @RestController
@@ -95,8 +95,10 @@ public class ProductController {
             404 `RESOURCE_NOT_FOUND` / 409 `VARIANT_HAS_STOCK` · `VARIANT_ALLOCATED` ·
             `VARIANT_HAS_BACKORDER` · `VARIANT_IN_PENDING_ORDER`""")
     @PatchMapping("/{productId}")
-    public ProductDetailResponse update(@PathVariable Long productId, @Valid @RequestBody ProductUpdateRequest request) {
-        return ProductStubExamples.productDetail();
+    public ProductDetailResponse update(@AuthenticationPrincipal WholesalePrincipal principal,
+                                        @PathVariable Long productId,
+                                        @Valid @RequestBody ProductUpdateRequest request) {
+        return productCommandService.update(principal.wholesalerId(), productId, request);
     }
 
     @Operation(summary = "상품 삭제 (게시글 동반)", description = """
