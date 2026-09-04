@@ -93,6 +93,10 @@ public class Product {
         return ++lastVariantSeq;
     }
 
+    public void softDelete() {
+        this.deletedAt = OffsetDateTime.now();
+    }
+
     public void rename(String name) {
         this.name = name;
     }

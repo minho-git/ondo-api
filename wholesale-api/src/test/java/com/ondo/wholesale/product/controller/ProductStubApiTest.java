@@ -55,11 +55,4 @@ class ProductStubApiTest {
                 .andExpect(jsonPath("$.data.seasonEndedAt").isNotEmpty());
     }
 
-    @Test
-    void 상품삭제는_204_본문없음이다() throws Exception {
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-                        .delete("/api/wholesale/products/5012").with(TestSecuritySupport.approved()))
-                .andExpect(status().isNoContent())
-                .andExpect(content().string(""));
-    }
 }

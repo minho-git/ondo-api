@@ -31,6 +31,8 @@ import java.util.Map;
 public class ProductCommandService {
 
     private final ProductRepository productRepository;
+    private final com.ondo.wholesale.product.repository.ListingRepository listingRepository;
+    private final VariantUsageChecker variantUsageChecker;
     private final ProductOptionValidator productOptionValidator;
     private final ProductNumberAllocator productNumberAllocator;
     private final CategoryTree categoryTree;
@@ -83,5 +85,29 @@ public class ProductCommandService {
         }
         listingWriter.verifyPriceCoverage(product);
         return productDetailAssembler.assemble(product);
+    }
+
+    /**
+     * 상품 삭제 (MUL-94) — 게시글 동반 soft delete, 품번은 영구 결번(D-004).
+     * 살아있는 전 variant 가 삭제 가능해야 통과한다(일괄 409) — 일부만 걸려도 아무것도 안 지운다.
+     * 지우는 건 살아있는 variant 뿐이다 — 이미 죽은 variant 의 삭제 시각은 보존한다.
+     */
+    public void delete(Long wholesalerId, Long productId) {
+        Product product = productRepository
+                .findWithLockByIdAndWholesalerIdAndDeletedAtIsNull(productId, wholesalerId)
+                .orElseThrow(() -> new ResourceNotFoundException("상품이 없거나 접근할 수 없습니다."));
+
+        java.util.List<com.ondo.wholesale.product.domain.Variant> alive = product.getColorOptions().stream()
+                .flatMap(option -> option.getVariants().stream())
+                .filter(com.ondo.wholesale.product.domain.Variant::isAlive)
+                .toList();
+        if (!alive.isEmpty()) {
+            variantUsageChecker.ensureDeletable(alive.stream()
+                    .map(com.ondo.wholesale.product.domain.Variant::getId).toList());
+            alive.forEach(com.ondo.wholesale.product.domain.Variant::softDelete);
+        }
+        listingRepository.findByProductIdAndDeletedAtIsNull(product.getId())
+                .ifPresent(com.ondo.wholesale.product.domain.Listing::softDelete);
+        product.softDelete();
     }
 }

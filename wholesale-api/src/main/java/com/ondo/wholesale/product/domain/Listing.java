@@ -100,6 +100,10 @@ public class Listing {
         }
     }
 
+    public void softDelete() {
+        this.deletedAt = OffsetDateTime.now();
+    }
+
     public void updateTitle(String title) {
         this.title = title;
     }
