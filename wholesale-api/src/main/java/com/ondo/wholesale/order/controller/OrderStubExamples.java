@@ -1,13 +1,16 @@
-package com.ondo.wholesale.order;
+package com.ondo.wholesale.order.controller;
 
-import com.ondo.wholesale.order.dto.OrderDetailResponse;
-import com.ondo.wholesale.order.dto.OrderFilterResponse;
-import com.ondo.wholesale.order.dto.OrderItemResponse;
-import com.ondo.wholesale.order.dto.OrderStatusResponse;
-import com.ondo.wholesale.order.dto.OrderSummaryResponse;
-import com.ondo.wholesale.order.dto.PackingCreatedResponse;
-import com.ondo.wholesale.order.dto.PackingItemResponse;
-import com.ondo.wholesale.order.dto.PackingQueueItemResponse;
+import com.ondo.wholesale.order.OrderStatusKey;
+import com.ondo.wholesale.order.PackingStatus;
+import com.ondo.wholesale.order.PaymentMethod;
+import com.ondo.wholesale.order.ReceiveBy;
+import com.ondo.wholesale.order.SettlementStatus;
+import com.ondo.wholesale.order.dto.response.OrderDetailResponse;
+import com.ondo.wholesale.order.dto.response.OrderItemResponse;
+import com.ondo.wholesale.order.dto.response.OrderStatusResponse;
+import com.ondo.wholesale.order.dto.response.PackingCreatedResponse;
+import com.ondo.wholesale.order.dto.response.PackingItemResponse;
+import com.ondo.wholesale.order.dto.response.PackingQueueItemResponse;
 import com.ondo.wholesale.product.domain.Size;
 
 import java.time.OffsetDateTime;
@@ -23,28 +26,6 @@ final class OrderStubExamples {
     private static final ZoneOffset KST = ZoneOffset.ofHours(9);
 
     private OrderStubExamples() {
-    }
-
-    static List<OrderSummaryResponse> orderSummaries() {
-        return List.of(new OrderSummaryResponse(
-                5531L, 1,
-                OffsetDateTime.of(2024, 8, 1, 10, 22, 0, 0, KST),
-                3301L, "서울유통",
-                "프리미엄 오가닉 코튼 티셔츠 (블랙)", 2,
-                152000,
-                new OrderStatusResponse(OrderStatusKey.NEW, "신규 주문"),
-                SettlementStatus.UNPAID, 0,
-                true, true, false));
-    }
-
-    static List<OrderFilterResponse> orderFilters() {
-        return List.of(
-                new OrderFilterResponse(OrderFilterKey.ALL, "전체", 82),
-                new OrderFilterResponse(OrderFilterKey.NEW, "신규 주문", 10),
-                new OrderFilterResponse(OrderFilterKey.CONFIRMED, "주문 확정", 20),
-                new OrderFilterResponse(OrderFilterKey.PARTIALLY_SHIPPED, "부분 출고", 15),
-                new OrderFilterResponse(OrderFilterKey.SHIPPED, "출고 완료", 30),
-                new OrderFilterResponse(OrderFilterKey.CANCELLED, "주문 취소", 7));
     }
 
     /** 확정 후 상태의 상세 — GET 상세·확정 응답 공용. */

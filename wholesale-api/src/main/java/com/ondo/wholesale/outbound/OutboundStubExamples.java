@@ -2,7 +2,7 @@ package com.ondo.wholesale.outbound;
 
 import com.ondo.wholesale.order.PackingStatus;
 import com.ondo.wholesale.order.ReceiveBy;
-import com.ondo.wholesale.order.dto.PackingItemResponse;
+import com.ondo.wholesale.order.dto.response.PackingItemResponse;
 import com.ondo.wholesale.outbound.dto.OutboundCreatedResponse;
 import com.ondo.wholesale.outbound.dto.OutboundDetailResponse;
 import com.ondo.wholesale.outbound.dto.OutboundItemResponse;

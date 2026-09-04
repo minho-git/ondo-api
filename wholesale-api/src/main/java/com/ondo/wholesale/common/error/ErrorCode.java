@@ -51,7 +51,20 @@ public enum ErrorCode {
     // 이메일만 넣어보며 가입 여부를 확인할 수 있다(계정 열거). 그래서 실패는 이 하나뿐이다.
     // UNAUTHENTICATED 도 401 이지만 그건 "세션이 없다"는 뜻이라 문구가 다르다 —
     // 로그인 폼 밑에 "인증이 필요합니다."를 띄울 수는 없다.
-    LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다.");
+    LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
+
+    // ── 주문 (MUL-47) ──
+    // 400 은 요청 자체가 잘못된 것 — 주문·배분 상태와 무관하게 언제 보내도 실패한다.
+    // 409 는 지금 상태와 충돌하는 것 — 같은 요청도 상태가 바뀌면 성공할 수 있다.
+    // ALLOCATION_EXCEEDS_ORDER 는 확정 스텁(400)과 포장 준비 스텁(409)이 다르게 적었었는데,
+    // 배분 합이 주문 수량을 넘는 것은 서버 상태와 무관한 요청 오류라 400 으로 통일했다.
+    ORDER_ITEM_MISSING(HttpStatus.BAD_REQUEST, "확정에는 주문의 모든 라인이 필요합니다."),
+    ORDER_ITEM_NOT_IN_ORDER(HttpStatus.BAD_REQUEST, "이 주문에 없는 라인입니다."),
+    DUPLICATE_ORDER_ITEM(HttpStatus.BAD_REQUEST, "같은 라인을 두 번 담을 수 없습니다."),
+    ALLOCATION_EXCEEDS_ORDER(HttpStatus.BAD_REQUEST, "배분 수량이 주문 수량을 넘을 수 없습니다."),
+    ALLOCATION_EXCEEDS_REMAINING(HttpStatus.CONFLICT, "배분 수량이 남은 수량을 넘을 수 없습니다."),
+    INSUFFICIENT_STOCK(HttpStatus.CONFLICT, "가용 재고가 부족합니다."),
+    DOCUMENT_FINALIZED(HttpStatus.CONFLICT, "이미 확정된 문서는 변경할 수 없습니다.");
 
     private final HttpStatus status;
     private final String defaultMessage;
