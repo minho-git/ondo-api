@@ -93,10 +93,50 @@ resource "aws_security_group" "app_wholesale" {
   tags        = { Name = "${local.prefix}-app-wholesale" }
 }
 
+# ── 내부 ALB (MUL-87) ────────────────────────────────────────
+#
+# 소매가 도매를 부르는 길이다. 공개 ALB 와 달리 인터넷에서 안 온다.
+# 소매 태스크 SG 에서만 받는다 — VPC 안 다른 무언가가 도매 데이터를 긁어가지 못하게.
+resource "aws_security_group" "alb_internal" {
+  name        = "${local.prefix}-alb-internal"
+  description = "Internal ALB - retail to wholesale"
+  vpc_id      = aws_vpc.main.id
+  tags        = { Name = "${local.prefix}-alb-internal" }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "alb_internal_from_retail" {
+  security_group_id            = aws_security_group.alb_internal.id
+  description                  = "From retail tasks only"
+  referenced_security_group_id = aws_security_group.app_retail.id
+  from_port                    = 80
+  to_port                      = 80
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "alb_internal_to_wholesale" {
+  security_group_id            = aws_security_group.alb_internal.id
+  description                  = "To wholesale tasks"
+  referenced_security_group_id = aws_security_group.app_wholesale.id
+  from_port                    = 8081
+  to_port                      = 8081
+  ip_protocol                  = "tcp"
+}
+
+# 도매는 공개 ALB(도매 화면)와 내부 ALB(소매 접점) 둘 다에서 받는다.
+# 규칙을 나눠 두면 콘솔에서 어느 길이 열려 있는지 한눈에 보인다
 resource "aws_vpc_security_group_ingress_rule" "app_wholesale_from_alb" {
   security_group_id            = aws_security_group.app_wholesale.id
   description                  = "From ALB only"
   referenced_security_group_id = aws_security_group.alb.id
+  from_port                    = 8081
+  to_port                      = 8081
+  ip_protocol                  = "tcp"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "app_wholesale_from_alb_internal" {
+  security_group_id            = aws_security_group.app_wholesale.id
+  description                  = "From internal ALB - retail gateway"
+  referenced_security_group_id = aws_security_group.alb_internal.id
   from_port                    = 8081
   to_port                      = 8081
   ip_protocol                  = "tcp"
