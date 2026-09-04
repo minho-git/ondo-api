@@ -176,12 +176,4 @@ public class RetailGatewayListingService {
                 .map(item -> new RetailListingDetailResponse.CategoryNode(item.id(), item.name()))
                 .toList();
     }
-
-    /**
-     * 한 장과 전체 개수. 컨트롤러가 {@code meta} 를 만드는 데 쓴다.
-     *
-     * <p>스프링의 {@code Page} 를 안 쓴 건 그게 JSON 으로 나갈 물건이 아니어서다 —
-     * 여기서는 컨트롤러에 넘기는 중간 모양일 뿐이다.
-     */
-    public record Paged<T>(List<T> content, long totalElements) {}
 }

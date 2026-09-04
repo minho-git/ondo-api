@@ -1,5 +1,7 @@
 package com.ondo.retail.wholesale.listing;
 
+import static com.ondo.retail.wholesale.WholesaleCall.call;
+
 import com.ondo.retail.listing.ListingClient;
 import com.ondo.retail.listing.dto.CategoryResponse;
 import com.ondo.retail.listing.dto.FilterOptionsResponse;
@@ -8,8 +10,8 @@ import com.ondo.retail.listing.dto.ListingSearchCondition;
 import com.ondo.retail.listing.dto.ListingSummaryResponse;
 import com.ondo.retail.listing.dto.VariantInfo;
 import com.ondo.retail.wholesale.WholesaleApiException;
+import com.ondo.retail.wholesale.dto.WholesaleEnvelope;
 import com.ondo.retail.wholesale.listing.dto.WholesaleCategory;
-import com.ondo.retail.wholesale.listing.dto.WholesaleEnvelope;
 import com.ondo.retail.wholesale.listing.dto.WholesaleFilterOptions;
 import com.ondo.retail.wholesale.listing.dto.WholesaleListingDetail;
 import com.ondo.retail.wholesale.listing.dto.WholesaleListingSummary;
@@ -19,7 +21,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -142,21 +143,6 @@ public class WholesaleListingAdapter implements ListingClient {
             }
         }
         return byId;
-    }
-
-    /**
-     * 도매 호출을 감싸 실패를 하나로 모은다.
-     *
-     * <p>{@link RestClientException} 하나로 잡는 이유 — 도매가 안 떠 있는 것도(연결 거부),
-     * 제때 안 주는 것도(타임아웃), 5xx 도 소매 입장에선 같은 일이다. 소매가 할 수 있는 게
-     * 없고 사용자에게 할 말도 같다.
-     */
-    private static <T> T call(String what, Supplier<T> request) {
-        try {
-            return request.get();
-        } catch (RestClientException e) {
-            throw new WholesaleApiException("도매를 부르지 못했습니다. 요청=" + what, e);
-        }
     }
 
     // ── 도매 말 → 소매 말 ───────────────────────────────────────

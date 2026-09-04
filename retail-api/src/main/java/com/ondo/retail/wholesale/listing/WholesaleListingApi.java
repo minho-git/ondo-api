@@ -1,7 +1,7 @@
 package com.ondo.retail.wholesale.listing;
 
 import com.ondo.retail.wholesale.listing.dto.WholesaleCategory;
-import com.ondo.retail.wholesale.listing.dto.WholesaleEnvelope;
+import com.ondo.retail.wholesale.dto.WholesaleEnvelope;
 import com.ondo.retail.wholesale.listing.dto.WholesaleFilterOptions;
 import com.ondo.retail.wholesale.listing.dto.WholesaleListingDetail;
 import com.ondo.retail.wholesale.listing.dto.WholesaleListingSummary;
