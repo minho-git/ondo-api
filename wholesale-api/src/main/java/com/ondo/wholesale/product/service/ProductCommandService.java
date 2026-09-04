@@ -82,10 +82,10 @@ public class ProductCommandService {
                 .description(request.description())
                 .singlePieceAllowed(Boolean.TRUE.equals(request.isSinglePieceAllowed()))
                 .build();
-        listing.replaceImages(request.images());
+        listing.replaceImages(request.images() == null ? List.of() : request.images());
         listingRepository.save(listing);
 
-        savePrices(product, listing, request.variantPrices());
+        savePrices(product, listing, request.variantPrices() == null ? List.of() : request.variantPrices());
     }
 
     /**

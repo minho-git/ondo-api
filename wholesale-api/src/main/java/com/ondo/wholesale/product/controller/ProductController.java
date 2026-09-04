@@ -95,7 +95,7 @@ public class ProductController {
             404 `RESOURCE_NOT_FOUND` / 409 `VARIANT_HAS_STOCK` · `VARIANT_ALLOCATED` ·
             `VARIANT_HAS_BACKORDER` · `VARIANT_IN_PENDING_ORDER`""")
     @PatchMapping("/{productId}")
-    public ProductDetailResponse update(@PathVariable Long productId, @RequestBody ProductUpdateRequest request) {
+    public ProductDetailResponse update(@PathVariable Long productId, @Valid @RequestBody ProductUpdateRequest request) {
         return ProductStubExamples.productDetail();
     }
 

@@ -33,8 +33,5 @@ public record ListingUpsertRequest(
         @Valid
         List<VariantPriceRequest> variantPrices
 ) {
-    public ListingUpsertRequest {
-        images = (images == null) ? List.of() : images;
-        variantPrices = (variantPrices == null) ? List.of() : variantPrices;
-    }
+    // 정규화하지 않는다 — PATCH 에서 "생략(null) = 무변경"과 "빈 배열 = 전부 삭제"를 구분해야 한다.
 }

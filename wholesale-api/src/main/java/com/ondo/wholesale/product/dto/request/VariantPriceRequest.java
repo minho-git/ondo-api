@@ -1,7 +1,9 @@
 package com.ondo.wholesale.product.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ondo.wholesale.product.domain.Size;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
@@ -32,5 +34,15 @@ public record VariantPriceRequest(
 ) {
     public VariantPriceRequest {
         orderLimit = (orderLimit == null) ? 0 : orderLimit;
+    }
+
+    /** 지정 방식은 정확히 하나 — variantId 단독 또는 (colorId, size) 쌍. */
+    @JsonIgnore
+    @AssertTrue(message = "variantId 또는 (colorId, size) 중 한쪽만 지정한다.")
+    @Schema(hidden = true)
+    public boolean isTargetSpecified() {
+        boolean byId = variantId != null && colorId == null && size == null;
+        boolean byColorSize = variantId == null && colorId != null && size != null;
+        return byId || byColorSize;
     }
 }
