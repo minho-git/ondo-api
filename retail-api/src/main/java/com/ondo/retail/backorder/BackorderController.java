@@ -6,20 +6,21 @@ import com.ondo.retail.common.error.ErrorCode;
 import com.ondo.retail.common.response.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 미송 대기 현황. <b>지금은 껍데기다 — 목 데이터를 돌려준다.</b>
+ * 미송 대기 현황.
  *
- * <p>미송 데이터는 도매 DB 에 있다. 소매는 도매 내부 API 로 가져와야 하는데 그게 아직
- * 없어서 목으로 모양만 낸다. 프론트가 화면을 잡을 수 있게 하려는 것이다.
+ * <p>미송은 도매 DB 에 있다. 소매는 도매 내부 API 로 가져와 자기 주문번호만 채워 넣는다
+ * (MUL-97). 만드는 것도 푸는 것도 도매 몫이고 소매는 읽기만 한다.
+ *
+ * <p>소매처 id 는 <b>세션에서만</b> 꺼낸다. 요청에 담긴 값을 믿으면 남의 미송을 볼 수 있다.
  */
 @Tag(name = "미송", description = "주문했는데 아직 못 받은 것. 도매가 풀고 소매는 읽기만 한다.")
 @RestController
@@ -29,7 +30,7 @@ public class BackorderController {
 
     private static final int MAX_PAGE_SIZE = 100;
 
-    private final MockBackorderData mock;
+    private final BackorderService backorderService;
 
     /**
      * 미송 대기 목록. {@code status = 'OPEN'} 인 것만, <b>오래된 순</b>이다.
@@ -41,14 +42,18 @@ public class BackorderController {
     @GetMapping("/backorders")
     public PageResponse<BackorderResponse> backorders(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication) {
 
         if (size > MAX_PAGE_SIZE) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED);
         }
 
-        List<BackorderResponse> backorders = mock.backorders();
         return PageResponse.of(
-                new PageImpl<>(backorders, PageRequest.of(page, size), backorders.size()));
+                backorderService.waiting(retailerId(authentication), PageRequest.of(page, size)));
+    }
+
+    private static Long retailerId(Authentication authentication) {
+        return Long.valueOf(authentication.getName());
     }
 }
