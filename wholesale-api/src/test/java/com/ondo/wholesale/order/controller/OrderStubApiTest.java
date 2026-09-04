@@ -1,4 +1,4 @@
-package com.ondo.wholesale.order;
+package com.ondo.wholesale.order.controller;
 
 import com.ondo.wholesale.common.error.ErrorResponseWriter;
 import com.ondo.wholesale.common.response.ApiResponseBodyAdvice;

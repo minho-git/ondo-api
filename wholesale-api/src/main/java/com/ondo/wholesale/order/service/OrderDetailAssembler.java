@@ -3,9 +3,9 @@ package com.ondo.wholesale.order.service;
 import com.ondo.wholesale.order.domain.Order;
 import com.ondo.wholesale.order.domain.OrderItem;
 import com.ondo.wholesale.order.domain.Partner;
-import com.ondo.wholesale.order.dto.OrderDetailResponse;
-import com.ondo.wholesale.order.dto.OrderItemResponse;
-import com.ondo.wholesale.order.dto.OrderStatusResponse;
+import com.ondo.wholesale.order.dto.response.OrderDetailResponse;
+import com.ondo.wholesale.order.dto.response.OrderItemResponse;
+import com.ondo.wholesale.order.dto.response.OrderStatusResponse;
 import com.ondo.wholesale.order.repository.PartnerRepository;
 import com.ondo.wholesale.product.domain.Size;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +55,7 @@ public class OrderDetailAssembler {
         int allocatedSum = items.stream().mapToInt(OrderItem::getAllocatedQty).sum();
         int shippedSum = items.stream().mapToInt(OrderItem::getShippedQty).sum();
         int orderAmount = items.stream().mapToInt(i -> i.getQty() * i.getUnitPrice()).sum();
-        OrderStatuses.Derived derived = OrderStatuses.derive(order.getStatus(),
+        OrderStatusRule.Derived derived = OrderStatusRule.derive(order.getStatus(),
                 totalQty, allocatedSum, shippedSum);
 
         List<OrderItemResponse> itemRows = items.stream()

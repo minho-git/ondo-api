@@ -1,4 +1,4 @@
-package com.ondo.wholesale.order;
+package com.ondo.wholesale.order.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

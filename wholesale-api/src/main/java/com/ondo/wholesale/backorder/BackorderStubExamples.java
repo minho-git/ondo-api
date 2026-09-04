@@ -8,7 +8,7 @@ import com.ondo.wholesale.backorder.dto.BackorderSkuResponse;
 import com.ondo.wholesale.backorder.dto.BackorderStatsResponse;
 import com.ondo.wholesale.backorder.dto.ExpectedInboundResponse;
 import com.ondo.wholesale.order.PackingStatus;
-import com.ondo.wholesale.order.dto.PackingItemResponse;
+import com.ondo.wholesale.order.dto.response.PackingItemResponse;
 import com.ondo.wholesale.product.domain.Size;
 
 import java.time.LocalDate;

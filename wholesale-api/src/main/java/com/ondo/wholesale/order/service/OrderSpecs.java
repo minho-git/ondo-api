@@ -68,7 +68,7 @@ final class OrderSpecs {
 
     /**
      * 표시 상태 칩의 필터. NEW·CANCELLED 는 저장값 비교고, 확정 계열 3값은
-     * 출고 합계 서브쿼리로 가른다 — 파생 규칙은 {@link OrderStatuses}와 같은 어휘다.
+     * 출고 합계 서브쿼리로 가른다 — 파생 규칙은 {@link OrderStatusRule}와 같은 어휘다.
      */
     static Specification<Order> derivedStatus(OrderFilterKey filter) {
         return (root, query, cb) -> switch (filter) {

@@ -1,4 +1,4 @@
-package com.ondo.wholesale.order.dto;
+package com.ondo.wholesale.order.dto.request;
 
 /**
  * 라인 하나의 배분 지시. 확정에선 {@code allocateQty: 0}이 정상값(전량 미송),

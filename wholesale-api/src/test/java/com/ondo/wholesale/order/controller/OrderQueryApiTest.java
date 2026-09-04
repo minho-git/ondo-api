@@ -1,5 +1,8 @@
-package com.ondo.wholesale.order;
+package com.ondo.wholesale.order.controller;
 
+import com.ondo.wholesale.order.OrderFilterKey;
+import com.ondo.wholesale.order.OrderStatusKey;
+import com.ondo.wholesale.order.SettlementStatus;
 import com.ondo.wholesale.common.error.ErrorResponseWriter;
 import com.ondo.wholesale.common.error.GlobalExceptionHandler;
 import com.ondo.wholesale.common.error.ResourceNotFoundException;
@@ -7,9 +10,9 @@ import com.ondo.wholesale.common.response.ApiResponse;
 import com.ondo.wholesale.common.response.ApiResponseBodyAdvice;
 import com.ondo.wholesale.common.trace.TraceIdFilter;
 import com.ondo.wholesale.config.SecurityConfig;
-import com.ondo.wholesale.order.dto.OrderFilterResponse;
-import com.ondo.wholesale.order.dto.OrderStatusResponse;
-import com.ondo.wholesale.order.dto.OrderSummaryResponse;
+import com.ondo.wholesale.order.dto.response.OrderFilterResponse;
+import com.ondo.wholesale.order.dto.response.OrderStatusResponse;
+import com.ondo.wholesale.order.dto.response.OrderSummaryResponse;
 import com.ondo.wholesale.order.service.OrderQueryService;
 import com.ondo.wholesale.security.ApprovedAuthorizationManager;
 import com.ondo.wholesale.security.RestAccessDeniedHandler;

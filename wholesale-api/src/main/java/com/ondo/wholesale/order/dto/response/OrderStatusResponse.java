@@ -1,4 +1,4 @@
-package com.ondo.wholesale.order.dto;
+package com.ondo.wholesale.order.dto.response;
 
 import com.ondo.wholesale.order.OrderStatusKey;
 

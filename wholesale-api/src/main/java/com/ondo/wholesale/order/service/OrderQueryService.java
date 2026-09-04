@@ -7,10 +7,10 @@ import com.ondo.wholesale.order.OrderFilterKey;
 import com.ondo.wholesale.order.OrderStatusKey;
 import com.ondo.wholesale.order.domain.Order;
 import com.ondo.wholesale.order.domain.Partner;
-import com.ondo.wholesale.order.dto.OrderDetailResponse;
-import com.ondo.wholesale.order.dto.OrderFilterResponse;
-import com.ondo.wholesale.order.dto.OrderStatusResponse;
-import com.ondo.wholesale.order.dto.OrderSummaryResponse;
+import com.ondo.wholesale.order.dto.response.OrderDetailResponse;
+import com.ondo.wholesale.order.dto.response.OrderFilterResponse;
+import com.ondo.wholesale.order.dto.response.OrderStatusResponse;
+import com.ondo.wholesale.order.dto.response.OrderSummaryResponse;
 import com.ondo.wholesale.order.repository.OrderRepository;
 import com.ondo.wholesale.order.repository.PartnerRepository;
 import lombok.RequiredArgsConstructor;
@@ -112,7 +112,7 @@ public class OrderQueryService {
     private OrderSummaryResponse summaryRow(Order order, OrderSummaryReader.FirstLine firstLine,
                                             OrderSummaryReader.QtySums sums,
                                             OrderSummaryReader.Settlement settlement, Partner partner) {
-        OrderStatuses.Derived derived = OrderStatuses.derive(order.getStatus(),
+        OrderStatusRule.Derived derived = OrderStatusRule.derive(order.getStatus(),
                 sums.totalQty(), sums.allocatedSum(), sums.shippedSum());
         return new OrderSummaryResponse(
                 order.getId(), order.getOrderNumber(), order.getOrderedAt(),
@@ -126,6 +126,6 @@ public class OrderQueryService {
 
     private String chipLabel(OrderFilterKey key) {
         return (key == OrderFilterKey.ALL) ? "전체"
-                : OrderStatuses.label(OrderStatusKey.valueOf(key.name()));
+                : OrderStatusRule.label(OrderStatusKey.valueOf(key.name()));
     }
 }

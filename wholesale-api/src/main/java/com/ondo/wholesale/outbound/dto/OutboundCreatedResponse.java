@@ -1,7 +1,7 @@
 package com.ondo.wholesale.outbound.dto;
 
 import com.ondo.wholesale.order.PackingStatus;
-import com.ondo.wholesale.order.dto.PackingItemResponse;
+import com.ondo.wholesale.order.dto.response.PackingItemResponse;
 
 import java.time.OffsetDateTime;
 import java.util.List;

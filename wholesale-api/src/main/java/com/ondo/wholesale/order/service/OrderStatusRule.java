@@ -12,7 +12,7 @@ import java.util.Map;
  * 표시 5값을 만든다. 조합 규칙은 서버 안에만 둔다는 계약(OrderStatusKey 자바독)이
  * 가리키는 곳이 여기다 — 목록·칩·상세·버튼 boolean 이 전부 이 클래스를 쓴다.
  */
-public final class OrderStatuses {
+public final class OrderStatusRule {
 
     private static final Map<OrderStatusKey, String> LABELS = Map.of(
             OrderStatusKey.NEW, "신규 주문",
@@ -21,7 +21,7 @@ public final class OrderStatuses {
             OrderStatusKey.SHIPPED, "출고 완료",
             OrderStatusKey.CANCELLED, "주문 취소");
 
-    private OrderStatuses() {
+    private OrderStatusRule() {
     }
 
     /** 표시 키·라벨·버튼 노출을 한 번에 파생한 값. */
