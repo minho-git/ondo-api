@@ -97,7 +97,8 @@ public class ProductDetailAssembler {
                 price == null ? null : price.getOrderLimit());
     }
 
-    private ListingResponse toListingResponse(Listing listing) {
+    /** 시즌 전이 응답도 같은 스키마다 — 게시글 → ListingResponse 변환의 유일한 자리. */
+    public ListingResponse toListingResponse(Listing listing) {
         if (listing == null) {
             return null;
         }

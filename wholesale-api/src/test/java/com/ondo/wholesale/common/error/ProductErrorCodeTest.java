@@ -12,6 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ProductErrorCodeTest {
 
     @Test
+    void TRANSITION_NOT_ALLOWED는_CONFLICT다() {
+        assertThat(ErrorCode.TRANSITION_NOT_ALLOWED.status()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
     void variant_409군_코드는_전부_CONFLICT다() {
         assertThat(new ErrorCode[]{
                 ErrorCode.VARIANT_HAS_STOCK, ErrorCode.VARIANT_ALLOCATED,
