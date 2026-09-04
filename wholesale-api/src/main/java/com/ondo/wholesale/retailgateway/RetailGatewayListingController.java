@@ -73,7 +73,7 @@ public class RetailGatewayListingController {
 
         RetailListingSearchCondition condition =
                 new RetailListingSearchCondition(q, categoryId, colorIds, sizes, priceFrom, priceTo);
-        RetailGatewayListingService.Paged<RetailListingSummaryResponse> result =
+        Paged<RetailListingSummaryResponse> result =
                 service.search(condition, page, size);
 
         int totalPages = (int) Math.ceil((double) result.totalElements() / size);
