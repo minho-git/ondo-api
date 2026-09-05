@@ -62,6 +62,11 @@ public class OrderItem {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    /** 배분 반영. 수량 사다리 검증은 {@code AllocationValidator}가 끝낸 뒤다. */
+    public void allocate(int allocateQty) {
+        this.allocatedQty += allocateQty;
+    }
+
     OrderItem(Order order, Long variantId, int qty, int unitPrice) {
         this.order = order;
         this.variantId = variantId;
