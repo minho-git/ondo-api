@@ -15,10 +15,11 @@
 </head>
 <body>
   <!--
-    springdoc 이 만든 /v3/api-docs 를 Scalar 가 읽어서 그린다.
+    springdoc 이 만든 /v3/api-docs-retail 을 Scalar 가 읽어서 그린다.
+    기본값에서 옮겼다 — 도매와 같은 ALB 뒤라 경로가 겹치면 안 된다 (MUL-110).
     OpenAPI 생성은 그대로고 화면만 바뀐 것이다.
   -->
-  <script id="api-reference" data-url="/v3/api-docs"></script>
+  <script id="api-reference" data-url="/v3/api-docs-retail"></script>
   <script>
     /*
       hideModels        DTO 목록을 사이드바에서 뺀다. 엔드포인트에서 펼쳐 보면 되고,

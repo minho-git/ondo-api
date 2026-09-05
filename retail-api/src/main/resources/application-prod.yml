@@ -9,10 +9,35 @@ spring:
     password: ${DB_PASSWORD}
 
 server:
+  # ALB 가 앞에 있다. 앱이 보는 요청은 ALB 가 내부로 전달한 것이라 주소가 다르다 —
+  # 그대로 두면 스프링이 자기를 http://10.0.x.x:8080 인 줄 안다.
+  #
+  # 그러면 문서(MUL-110)의 servers 에 그 내부 주소가 박혀서, 스칼라의 테스트 버튼이
+  # 브라우저에서 닿지도 않는 곳을 부른다. 리다이렉트도 http 로 나간다.
+  #
+  # ALB 가 X-Forwarded-Proto · X-Forwarded-Host 를 붙여준다. 이 설정이 그걸 읽게 한다.
+  # 값을 믿어도 되는 건 ALB 가 클라이언트가 보낸 것을 덮어쓰기 때문이다.
+  forward-headers-strategy: framework
+
   servlet:
     session:
       cookie:
         secure: true   # 배포는 https 다. 이걸 안 켜면 쿠키가 http 로도 나간다
+
+        # ⚠️ 임시 개방 (MUL-110). 운영 띄우기 전에 lax 로 되돌린다 — MUL-102 · MUL-104.
+        #
+        # 창은이가 로컬 화면(localhost:3001)으로 이 배포 API 를 부르며 개발한다.
+        # lax 는 다른 사이트로 쿠키를 안 보낸다. localhost 와 api-dev.ddmondo.co.kr 은
+        # 브라우저 눈에 서로 남이라, CORS 를 열어줘도 로그인이 유지되지 않는다.
+        #
+        # 대가 — lax 가 공짜로 막아주던 CSRF 방어가 사라진다(숙제 13번 · MUL-102).
+        # 지금 배포엔 가짜 데이터와 시드 계정뿐이라 실질 피해는 없다.
+        #
+        # 이 파일에 적는 게 문제다. 배포 설정이 이거 하나뿐이라 나중에 운영에도
+        # 그대로 간다. MUL-104 로 프로필을 가르면 application-dev.yml 로 옮긴다.
+        #
+        # none 은 secure 없이는 브라우저가 아예 거부한다. 위에 켜져 있어서 짝이 맞는다.
+        same-site: none
 
 # 소매 화면의 교차 출처 호출 허용 (MUL-85).
 #

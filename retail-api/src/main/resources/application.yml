@@ -21,6 +21,17 @@ springdoc:
   swagger-ui:
     enabled: false   # 화면은 Scalar 를 쓴다(/docs). JSON 생성만 springdoc 이 한다
 
+  # 기본값 /v3/api-docs 에서 옮겼다 (MUL-110).
+  #
+  # 배포에서 문서를 열 때 도매·소매가 같은 ALB 뒤에 있는데, 둘 다 /v3/api-docs 를
+  # 쓰고 있었다. ALB 는 경로로 가르니 한 곳으로만 보낼 수 있고, 그러면 도매 문서를
+  # 열어도 소매 스펙이 그려진다.
+  #
+  # 도매가 아니라 소매를 옮긴 건 도매가 채빈 영역이어서다. 화면(/docs)과
+  # 도매 주소(/docs.html · /v3/api-docs)는 안 건드린다.
+  api-docs:
+    path: /v3/api-docs-retail
+
 server:
   servlet:
     multipart:

@@ -13,7 +13,11 @@
 variable "retail_cors_origins" {
   description = "소매 API 를 부를 화면"
   type        = string
-  default     = "https://ddmondo.co.kr"
+
+  # localhost:3001 은 ⚠️ 임시 개방 (MUL-110). 운영 띄우기 전에 뺀다 — MUL-103.
+  # 창은이가 로컬 화면으로 이 배포 API 를 부르며 개발한다. 쿠키도 같이 풀었다
+  # (application-prod.yml 의 same-site: none). 둘 중 하나만 있으면 로그인이 안 된다.
+  default = "https://ddmondo.co.kr,http://localhost:3001"
 }
 
 variable "wholesale_cors_origins" {
