@@ -4,6 +4,7 @@ import com.ondo.wholesale.common.error.ApiException;
 import com.ondo.wholesale.common.error.ErrorCode;
 import com.ondo.wholesale.order.domain.AllocationBatch;
 import com.ondo.wholesale.order.domain.Backorder;
+import com.ondo.wholesale.order.domain.BackorderStatus;
 import com.ondo.wholesale.order.domain.Order;
 import com.ondo.wholesale.order.domain.OrderItem;
 import com.ondo.wholesale.order.domain.Packing;
@@ -76,6 +77,35 @@ public class AllocationWriter {
             }
         }
         return packing;
+    }
+
+    /**
+     * 포장 준비 배분 — OPEN 미송(FIFO 첫 건)을 찾아 연결하고, 잔량이 0 이 되면 해소한다.
+     * allocateQty 는 전부 1 이상(검증 완료)이라 카드가 항상 생긴다.
+     */
+    public Packing packingAllocate(Long wholesalerId, Order order, List<LineAllocation> allocations) {
+        Map<Long, OrderItem> items = order.getItems().stream()
+                .collect(Collectors.toMap(OrderItem::getId, Function.identity()));
+        Map<Long, Variant> variants = lockVariants(items, allocations);
+        ensureAvailable(items, variants, allocations);
+
+        AllocationBatch batch = allocationBatchRepository.save(
+                AllocationBatch.builder().wholesalerId(wholesalerId).build());
+        Packing packing = Packing.builder().orderId(order.getId()).build();
+        for (LineAllocation allocation : allocations) {
+            OrderItem item = items.get(allocation.orderItemId());
+            Backorder backorder = backorderRepository
+                    .findFirstByOrderItemIdAndStatusOrderByCreatedAtAsc(item.getId(), BackorderStatus.OPEN)
+                    .orElse(null);
+            item.allocate(allocation.allocateQty());
+            variants.get(item.getVariantId()).reserve(allocation.allocateQty());
+            packing.addItem(item.getId(), backorder == null ? null : backorder.getId(),
+                    batch.getId(), allocation.allocateQty());
+            if (backorder != null && item.getAllocatedQty() == item.getQty()) {
+                backorder.resolve();
+            }
+        }
+        return packingRepository.save(packing);
     }
 
     /** 배분에 걸린 variant 행을 id 오름차순으로 잠근다 — 재고 경합의 직렬화 지점. */

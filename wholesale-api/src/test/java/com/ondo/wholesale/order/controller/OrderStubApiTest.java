@@ -8,6 +8,7 @@ import com.ondo.wholesale.security.ApprovedAuthorizationManager;
 import com.ondo.wholesale.security.RestAccessDeniedHandler;
 import com.ondo.wholesale.security.RestAuthenticationEntryPoint;
 import com.ondo.wholesale.order.service.OrderCommandService;
+import com.ondo.wholesale.order.service.PackingCommandService;
 import com.ondo.wholesale.order.service.OrderQueryService;
 import com.ondo.wholesale.security.support.TestSecuritySupport;
 import org.junit.jupiter.api.Test;
@@ -45,19 +46,8 @@ class OrderStubApiTest {
     @MockitoBean
     private OrderCommandService orderCommandService;
 
-    @Test
-    void 포장준비는_201로_생성된_카드_한장을_내린다() throws Exception {
-        mvc.perform(post("/api/wholesale/orders/5531/packings")
-                        .with(TestSecuritySupport.approved())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "items": [ { "orderItemId": 88102, "allocateQty": 4 } ] }
-                                """))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.status").value("READY"))
-                .andExpect(jsonPath("$.data.outboundId").value((Object) null))
-                .andExpect(jsonPath("$.data.items[0].qty").value(4));
-    }
+    @MockitoBean
+    private PackingCommandService packingCommandService;
 
     @Test
     void 배분취소는_204_본문없음이다() throws Exception {

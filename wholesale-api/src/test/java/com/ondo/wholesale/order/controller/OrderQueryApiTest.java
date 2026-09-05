@@ -15,6 +15,7 @@ import com.ondo.wholesale.order.dto.response.OrderStatusResponse;
 import com.ondo.wholesale.order.dto.response.OrderSummaryResponse;
 import com.ondo.wholesale.order.service.OrderCommandService;
 import com.ondo.wholesale.order.service.OrderQueryService;
+import com.ondo.wholesale.order.service.PackingCommandService;
 import com.ondo.wholesale.security.ApprovedAuthorizationManager;
 import com.ondo.wholesale.security.RestAccessDeniedHandler;
 import com.ondo.wholesale.security.RestAuthenticationEntryPoint;
@@ -56,6 +57,9 @@ class OrderQueryApiTest {
     /** 명령은 이 테스트 범위 밖 — 컨트롤러 생성에만 필요해 모킹한다. */
     @MockitoBean
     private OrderCommandService orderCommandService;
+
+    @MockitoBean
+    private PackingCommandService packingCommandService;
 
     @Test
     void 주문목록은_data배열과_페이징meta를_함께_내린다() throws Exception {

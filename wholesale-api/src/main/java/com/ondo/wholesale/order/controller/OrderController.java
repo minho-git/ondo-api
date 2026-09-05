@@ -6,6 +6,7 @@ import com.ondo.wholesale.order.dto.request.OrderConfirmRequest;
 import com.ondo.wholesale.order.service.OrderCommandService;
 import com.ondo.wholesale.order.service.OrderListQuery;
 import com.ondo.wholesale.order.service.OrderQueryService;
+import com.ondo.wholesale.order.service.PackingCommandService;
 import com.ondo.wholesale.security.WholesalePrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -33,7 +34,7 @@ import java.util.List;
 
 /**
  * 주문 API (MUL-47) — 원본 계약: api-lite/04_주문.
- * 조회 3종과 확정·취소는 실구현이고, 포장 준비·대기열은 아직 계약 스텁(MUL-82)이라 example 응답을 반환한다.
+ * 조회 3종과 확정·취소·포장 준비는 실구현이고, 포장 대기열만 아직 계약 스텁(MUL-82)이다.
  */
 @Tag(name = "04 주문")
 @RestController
@@ -43,6 +44,7 @@ public class OrderController {
 
     private final OrderQueryService orderQueryService;
     private final OrderCommandService orderCommandService;
+    private final PackingCommandService packingCommandService;
 
     @Operation(summary = "주문 목록", description = """
             주문 탭 리스트와 정산 탭 [정산 상태] 세그먼트가 같은 스키마를 쓴다 — 거는 필터만 다르다.
@@ -130,9 +132,10 @@ public class OrderController {
             `INSUFFICIENT_STOCK` · `ALLOCATION_EXCEEDS_REMAINING`""")
     @PostMapping("/{orderId}/packings")
     @ResponseStatus(HttpStatus.CREATED)
-    public PackingCreatedResponse createPacking(@PathVariable Long orderId,
+    public PackingCreatedResponse createPacking(@AuthenticationPrincipal WholesalePrincipal principal,
+                                                @PathVariable Long orderId,
                                                 @RequestBody PackingCreateRequest request) {
-        return OrderStubExamples.createdPacking();
+        return packingCommandService.create(principal.wholesalerId(), orderId, request);
     }
 
     @Operation(summary = "포장 대기열", description = """

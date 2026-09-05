@@ -8,7 +8,6 @@ import com.ondo.wholesale.order.SettlementStatus;
 import com.ondo.wholesale.order.dto.response.OrderDetailResponse;
 import com.ondo.wholesale.order.dto.response.OrderItemResponse;
 import com.ondo.wholesale.order.dto.response.OrderStatusResponse;
-import com.ondo.wholesale.order.dto.response.PackingCreatedResponse;
 import com.ondo.wholesale.order.dto.response.PackingItemResponse;
 import com.ondo.wholesale.order.dto.response.PackingQueueItemResponse;
 import com.ondo.wholesale.product.domain.Size;
@@ -26,14 +25,6 @@ final class OrderStubExamples {
     private static final ZoneOffset KST = ZoneOffset.ofHours(9);
 
     private OrderStubExamples() {
-    }
-
-    static PackingCreatedResponse createdPacking() {
-        return new PackingCreatedResponse(
-                7702L, 5531L, PackingStatus.READY, null,
-                OffsetDateTime.of(2024, 8, 1, 15, 2, 0, 0, KST),
-                List.of(new PackingItemResponse(
-                        91002L, 88102L, 90232L, 19, 2, "린넨 플로 셔츠", "베이지", Size.L, 4)));
     }
 
     static List<PackingQueueItemResponse> packingQueue() {
