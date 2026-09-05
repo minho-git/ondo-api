@@ -7,6 +7,7 @@ import com.ondo.wholesale.config.SecurityConfig;
 import com.ondo.wholesale.security.ApprovedAuthorizationManager;
 import com.ondo.wholesale.security.RestAccessDeniedHandler;
 import com.ondo.wholesale.security.RestAuthenticationEntryPoint;
+import com.ondo.wholesale.order.service.OrderCommandService;
 import com.ondo.wholesale.order.service.OrderQueryService;
 import com.ondo.wholesale.security.support.TestSecuritySupport;
 import org.junit.jupiter.api.Test;
@@ -41,30 +42,8 @@ class OrderStubApiTest {
     @MockitoBean
     private OrderQueryService orderQueryService;
 
-    @Test
-    void 주문확정은_상세와_동일한_스키마로_배분과_미송_현황을_내린다() throws Exception {
-        mvc.perform(post("/api/wholesale/orders/5531/confirm")
-                        .with(TestSecuritySupport.approved())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "items": [ { "orderItemId": 88102, "allocateQty": 6 } ] }
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status.key").value("CONFIRMED"))
-                .andExpect(jsonPath("$.data.confirmedAt").isNotEmpty())
-                .andExpect(jsonPath("$.data.items[0].allocatedQty").value(6))
-                .andExpect(jsonPath("$.data.items[0].unallocatedQty").value(4))
-                .andExpect(jsonPath("$.data.items[0].backorderQty").value(4));
-    }
-
-    @Test
-    void 주문취소는_CANCELLED_상태의_상세를_내린다() throws Exception {
-        mvc.perform(post("/api/wholesale/orders/5531/cancel").with(TestSecuritySupport.approved()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status.key").value("CANCELLED"))
-                .andExpect(jsonPath("$.data.confirmedAt").value((Object) null))
-                .andExpect(jsonPath("$.data.items[0].backorderQty").value(0));
-    }
+    @MockitoBean
+    private OrderCommandService orderCommandService;
 
     @Test
     void 포장준비는_201로_생성된_카드_한장을_내린다() throws Exception {

@@ -28,40 +28,6 @@ final class OrderStubExamples {
     private OrderStubExamples() {
     }
 
-    /** 확정 후 상태의 상세 — GET 상세·확정 응답 공용. */
-    static OrderDetailResponse confirmedDetail() {
-        return new OrderDetailResponse(
-                5531L, 1,
-                OffsetDateTime.of(2024, 8, 1, 10, 22, 0, 0, KST),
-                OffsetDateTime.of(2024, 8, 1, 14, 5, 0, 0, KST),
-                3301L, "서울유통", "010-1234-5678",
-                PaymentMethod.CASH, ReceiveBy.AGENT,
-                new OrderStatusResponse(OrderStatusKey.CONFIRMED, "주문 확정"),
-                SettlementStatus.UNPAID,
-                false, false, true,
-                152000, 25,
-                List.of(new OrderItemResponse(
-                        88102L, 90232L, 19, 2, "린넨 플로 셔츠", "베이지", Size.L,
-                        4200, 10, 6, 0, 4, 14, 4)));
-    }
-
-    /** 취소 후 상태의 상세 — NEW 주문이었으므로 배분·미송이 전부 0. */
-    static OrderDetailResponse cancelledDetail() {
-        return new OrderDetailResponse(
-                5531L, 1,
-                OffsetDateTime.of(2024, 8, 1, 10, 22, 0, 0, KST),
-                null,
-                3301L, "서울유통", "010-1234-5678",
-                PaymentMethod.CASH, ReceiveBy.AGENT,
-                new OrderStatusResponse(OrderStatusKey.CANCELLED, "주문 취소"),
-                SettlementStatus.UNPAID,
-                false, false, false,
-                152000, 25,
-                List.of(new OrderItemResponse(
-                        88102L, 90232L, 19, 2, "린넨 플로 셔츠", "베이지", Size.L,
-                        4200, 10, 0, 0, 10, 14, 0)));
-    }
-
     static PackingCreatedResponse createdPacking() {
         return new PackingCreatedResponse(
                 7702L, 5531L, PackingStatus.READY, null,

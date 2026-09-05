@@ -3,6 +3,7 @@ package com.ondo.wholesale.order.controller;
 import com.ondo.wholesale.order.OrderFilterKey;
 import com.ondo.wholesale.common.response.ApiResponse;
 import com.ondo.wholesale.order.dto.request.OrderConfirmRequest;
+import com.ondo.wholesale.order.service.OrderCommandService;
 import com.ondo.wholesale.order.service.OrderListQuery;
 import com.ondo.wholesale.order.service.OrderQueryService;
 import com.ondo.wholesale.security.WholesalePrincipal;
@@ -32,7 +33,7 @@ import java.util.List;
 
 /**
  * 주문 API (MUL-47) — 원본 계약: api-lite/04_주문.
- * 조회 3종은 실구현이고, 명령 4종은 아직 계약 스텁(MUL-82)이라 example 응답을 반환한다.
+ * 조회 3종과 확정·취소는 실구현이고, 포장 준비·대기열은 아직 계약 스텁(MUL-82)이라 example 응답을 반환한다.
  */
 @Tag(name = "04 주문")
 @RestController
@@ -41,6 +42,7 @@ import java.util.List;
 public class OrderController {
 
     private final OrderQueryService orderQueryService;
+    private final OrderCommandService orderCommandService;
 
     @Operation(summary = "주문 목록", description = """
             주문 탭 리스트와 정산 탭 [정산 상태] 세그먼트가 같은 스키마를 쓴다 — 거는 필터만 다르다.
@@ -101,8 +103,10 @@ public class OrderController {
             `INVARIANT_VIOLATED` · `ALLOCATION_EXCEEDS_ORDER` / 404 `RESOURCE_NOT_FOUND` /
             409 `TRANSITION_NOT_ALLOWED` · `INSUFFICIENT_STOCK`""")
     @PostMapping("/{orderId}/confirm")
-    public OrderDetailResponse confirm(@PathVariable Long orderId, @RequestBody OrderConfirmRequest request) {
-        return OrderStubExamples.confirmedDetail();
+    public OrderDetailResponse confirm(@AuthenticationPrincipal WholesalePrincipal principal,
+                                       @PathVariable Long orderId,
+                                       @RequestBody OrderConfirmRequest request) {
+        return orderCommandService.confirm(principal.wholesalerId(), orderId, request);
     }
 
     @Operation(summary = "주문 취소 (NEW 전용)", description = """
@@ -111,8 +115,9 @@ public class OrderController {
 
             에러: 404 `RESOURCE_NOT_FOUND` / 409 `TRANSITION_NOT_ALLOWED`""")
     @PostMapping("/{orderId}/cancel")
-    public OrderDetailResponse cancel(@PathVariable Long orderId) {
-        return OrderStubExamples.cancelledDetail();
+    public OrderDetailResponse cancel(@AuthenticationPrincipal WholesalePrincipal principal,
+                                      @PathVariable Long orderId) {
+        return orderCommandService.cancel(principal.wholesalerId(), orderId);
     }
 
     @Operation(summary = "포장 준비 (추가 배분)", description = """
