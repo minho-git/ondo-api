@@ -124,6 +124,19 @@ resource "aws_ecs_task_definition" "retail" {
       { name = "DB_URL", value = "jdbc:postgresql://${aws_db_instance.retail.endpoint}/ondo_retail" },
       { name = "DB_USERNAME", value = "ondo" },
       { name = "CORS_ALLOWED_ORIGINS", value = var.retail_cors_origins },
+
+      # ⚠️ 개발 환경 시드 (MUL-110). 운영 띄우기 전에 이 줄을 지운다 — MUL-103.
+      #
+      # 시드를 db/migration 이 아니라 db/seed 에 뒀다. 마이그레이션 폴더에 두면
+      # Testcontainers 가 테스트에서도 다 돌려서 도매 테스트 40개가 깨진다 —
+      # 시드가 넣은 도매처와 테스트가 넣는 도매처의 이메일이 부딪힌다.
+      #
+      # 그래서 기본 위치는 그대로 두고, 배포에서만 폴더를 하나 더 읽게 한다.
+      # 나중에 끄는 것도 이 줄을 지우면 끝이다. 앱 코드는 안 건드린다.
+      #
+      # 운영 DB 는 처음부터 이 줄 없이 뜨므로 V900 이 적용된 적이 없고,
+      # 그래서 Flyway 가 "적용됐는데 파일이 없다" 로 막지 않는다.
+      { name = "SPRING_FLYWAY_LOCATIONS", value = "classpath:db/migration,classpath:db/seed" },
       # 도매를 부르는 주소 (MUL-87). 내부 ALB 다
       { name = "WHOLESALE_BASE_URL", value = local.wholesale_base_url },
     ]
@@ -184,6 +197,19 @@ resource "aws_ecs_task_definition" "wholesale" {
       # ⚠️ 도매는 application-prod.yml 에 CORS 설정이 아직 없다(MUL-86 이 local 에만 넣었다).
       # 채빈이 환경변수를 받게 고치기 전까지 이 값은 무시된다
       { name = "CORS_ALLOWED_ORIGINS", value = var.wholesale_cors_origins },
+
+      # ⚠️ 개발 환경 시드 (MUL-110). 운영 띄우기 전에 이 줄을 지운다 — MUL-103.
+      #
+      # 시드를 db/migration 이 아니라 db/seed 에 뒀다. 마이그레이션 폴더에 두면
+      # Testcontainers 가 테스트에서도 다 돌려서 도매 테스트 40개가 깨진다 —
+      # 시드가 넣은 도매처와 테스트가 넣는 도매처의 이메일이 부딪힌다.
+      #
+      # 그래서 기본 위치는 그대로 두고, 배포에서만 폴더를 하나 더 읽게 한다.
+      # 나중에 끄는 것도 이 줄을 지우면 끝이다. 앱 코드는 안 건드린다.
+      #
+      # 운영 DB 는 처음부터 이 줄 없이 뜨므로 V900 이 적용된 적이 없고,
+      # 그래서 Flyway 가 "적용됐는데 파일이 없다" 로 막지 않는다.
+      { name = "SPRING_FLYWAY_LOCATIONS", value = "classpath:db/migration,classpath:db/seed" },
     ]
 
     secrets = [
