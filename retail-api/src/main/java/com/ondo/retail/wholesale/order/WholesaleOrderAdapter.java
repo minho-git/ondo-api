@@ -1,11 +1,19 @@
 package com.ondo.retail.wholesale.order;
 
+import static com.ondo.retail.wholesale.WholesaleCall.call;
+
 import com.ondo.retail.order.OrderClient;
+import com.ondo.retail.order.dto.OrderView;
+import com.ondo.retail.order.dto.PaymentTerm;
+import com.ondo.retail.order.dto.ReceiveMethod;
+import com.ondo.retail.order.dto.WholesalerWithBank;
 import com.ondo.retail.order.dto.WholesaleOrderCommand;
 import com.ondo.retail.order.dto.WholesaleOrderReceipt;
 import com.ondo.retail.wholesale.dto.WholesaleEnvelope;
 import com.ondo.retail.wholesale.order.dto.WholesaleOrderCreateRequest;
 import com.ondo.retail.wholesale.order.dto.WholesaleOrderCreated;
+import com.ondo.retail.wholesale.order.dto.WholesaleOrderView;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -55,6 +63,44 @@ public class WholesaleOrderAdapter implements OrderClient {
             return WholesaleOrderReceipt.rejected("UPSTREAM_UNAVAILABLE",
                     "도매처에 접수하지 못했어요. 장바구니에 그대로 있어요");
         }
+    }
+
+    /**
+     * 주문 조회.
+     *
+     * <p>접수와 달리 <b>예외를 던진다.</b> 주문 내역·상세는 도매 값을 못 읽으면 화면
+     * 자체를 못 그린다 — 상품·미송과 같다. 접수만 결과로 옮기는 것이고, 그건
+     * 도매처 하나가 거절해도 나머지는 접수돼야 해서다.
+     */
+    @Override
+    public List<OrderView> findOrders(Long retailerId, List<Long> retailOrderIds) {
+        if (retailOrderIds == null || retailOrderIds.isEmpty()) {
+            return List.of();
+        }
+        return call("주문 조회", () -> api.orders(retailerId, retailOrderIds)).data().stream()
+                .map(WholesaleOrderAdapter::toView)
+                .toList();
+    }
+
+    private static OrderView toView(WholesaleOrderView source) {
+        WholesaleOrderView.Wholesaler w = source.wholesaler();
+        return new OrderView(
+                source.retailOrderId(),
+                source.orderId(),
+                source.orderNumber(),
+                new WholesalerWithBank(w.id(), w.name(), w.storeBuilding(), w.storeUnit(),
+                        w.bankName(), w.bankAccountNo(), w.bankAccountHolder()),
+                source.statusKey(),
+                source.statusLabel(),
+                PaymentTerm.valueOf(source.paymentTerm()),
+                ReceiveMethod.valueOf(source.receiveMethod()),
+                source.amount(),
+                source.cancellable(),
+                source.items().stream()
+                        .map(i -> new OrderView.Item(i.listingId(), i.title(), i.colorName(), i.size(),
+                                i.qty(), i.unitPrice(), i.receivedQty(), i.backorderQty(),
+                                i.expectedInboundDate()))
+                        .toList());
     }
 
     /**

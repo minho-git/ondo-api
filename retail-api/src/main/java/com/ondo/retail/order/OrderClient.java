@@ -1,7 +1,9 @@
 package com.ondo.retail.order;
 
+import com.ondo.retail.order.dto.OrderView;
 import com.ondo.retail.order.dto.WholesaleOrderCommand;
 import com.ondo.retail.order.dto.WholesaleOrderReceipt;
+import java.util.List;
 
 /**
  * 도매에 주문을 넣는 통로.
@@ -20,4 +22,13 @@ import com.ondo.retail.order.dto.WholesaleOrderReceipt;
 public interface OrderClient {
 
     WholesaleOrderReceipt place(WholesaleOrderCommand command);
+
+    /**
+     * 주문서들에 딸린 도매처 주문을 읽는다.
+     *
+     * <p>주문서별로 묶지 않고 평평하게 온다 — 소매만 자기 주문서를 알기 때문이다.
+     *
+     * @param retailerId 세션에서 꺼낸 값이어야 한다. 도매가 이걸로 한 번 더 거른다
+     */
+    List<OrderView> findOrders(Long retailerId, List<Long> retailOrderIds);
 }

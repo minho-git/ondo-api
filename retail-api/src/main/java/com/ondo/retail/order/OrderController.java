@@ -47,6 +47,8 @@ public class OrderController {
 
     private final MockOrderData mock;
     private final OrderPlaceService placeService;
+    private final CheckoutService checkoutService;
+    private final OrderQueryService queryService;
 
     /**
      * 주문서. 장바구니에서 고른 것만 넘긴다.
@@ -56,11 +58,12 @@ public class OrderController {
     @Operation(summary = "주문서",
                description = "장바구니에서 고른 것만 넘긴다. 단가를 여기서 다시 받는다.")
     @GetMapping("/checkout")
-    public ApiResponse<CheckoutResponse> checkout(@RequestParam List<Long> cartItemIds) {
+    public ApiResponse<CheckoutResponse> checkout(@RequestParam List<Long> cartItemIds,
+                                                  Authentication authentication) {
         if (cartItemIds.isEmpty()) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED);
         }
-        return ApiResponse.of(mock.checkout());
+        return ApiResponse.of(checkoutService.checkout(retailerId(authentication), cartItemIds));
     }
 
     /**
@@ -92,22 +95,24 @@ public class OrderController {
             @RequestParam(required = false) LocalDate from,
             @RequestParam(required = false) LocalDate to,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication) {
 
         if (size > MAX_PAGE_SIZE || (from != null && to != null && from.isAfter(to))) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED);
         }
 
-        List<OrderSummaryResponse> orders = mock.orders();
-        return PageResponse.of(new PageImpl<>(orders, PageRequest.of(page, size), orders.size()));
+        return PageResponse.of(queryService.orders(
+                retailerId(authentication), from, to, PageRequest.of(page, size)));
     }
 
     /** 주문 상세. 도매처별 주문 · 품목 줄 · 출고 기록. */
     @Operation(summary = "주문 상세",
                description = "도매처별 주문 · 품목 줄 · 출고 기록.")
     @GetMapping("/orders/{orderId}")
-    public ApiResponse<OrderDetailResponse> order(@PathVariable Long orderId) {
-        return ApiResponse.of(mock.detail(orderId));
+    public ApiResponse<OrderDetailResponse> order(@PathVariable Long orderId,
+                                                  Authentication authentication) {
+        return ApiResponse.of(queryService.detail(retailerId(authentication), orderId));
     }
 
     /**

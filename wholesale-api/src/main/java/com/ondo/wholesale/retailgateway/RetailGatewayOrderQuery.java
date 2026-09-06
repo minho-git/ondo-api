@@ -1,5 +1,6 @@
 package com.ondo.wholesale.retailgateway;
 
+import com.ondo.wholesale.retailgateway.dto.RetailWholesalerResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -149,5 +150,38 @@ public class RetailGatewayOrderQuery {
                 .param("wholesalerId", wholesalerId)
                 .query(Integer.class)
                 .single();
+    }
+
+    // ── 도매처 ──────────────────────────────────────────────────
+
+    /**
+     * 주문서에 쓸 도매처 정보를 한 번에 (MUL-98).
+     *
+     * <p>계좌를 같이 준다. 소매 주문서는 도매처마다 따로 입금하는 화면이라 계좌가 없으면
+     * 그릴 수가 없다. 계좌가 비어 있는 도매처는 아직 등록을 안 한 것이고, 그때는
+     * 소매 화면이 계좌이체를 못 고르게 막는다.
+     *
+     * <p>지워진 도매처도 돌려준다. 지난 주문의 주문서를 다시 열 수 있어야 해서다.
+     */
+    public List<RetailWholesalerResponse> wholesalers(List<Long> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return jdbc.sql("""
+                        SELECT id, biz_name, store_building, store_unit,
+                               bank_name, bank_account_no, bank_account_holder
+                        FROM wholesale.wholesaler
+                        WHERE id IN (:ids)
+                        """)
+                .param("ids", ids)
+                .query((rs, rowNum) -> new RetailWholesalerResponse(
+                        rs.getLong("id"),
+                        rs.getString("biz_name"),
+                        rs.getString("store_building"),
+                        rs.getString("store_unit"),
+                        rs.getString("bank_name"),
+                        rs.getString("bank_account_no"),
+                        rs.getString("bank_account_holder")))
+                .list();
     }
 }

@@ -29,8 +29,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 내부 ALB 를 붙이면 VPC 안에서 아무나 부를 수 있게 되므로 반드시 막혀야 한다.
  * 다른 하나는 <b>로컬이 깨지는 것</b> — 팀원들이 시크릿을 맞추지 않아도 돌아가야 한다.
  *
- * <p>접수 서비스는 가짜로 세운다(MUL-98). 여기서 보는 건 문 앞의 검사뿐이고,
- * 주문이 실제로 들어가는지는 {@code RetailGatewayOrderApiTest} 가 본다.
+ * <p>컨트롤러가 쓰는 서비스는 전부 가짜로 세운다(MUL-98). 여기서 보는 건 문 앞의
+ * 검사뿐이고, 주문이 실제로 들어가고 읽히는지는 {@code RetailGatewayOrderApiTest} 가 본다.
  */
 class GatewaySecretTest {
 
@@ -56,6 +56,9 @@ class GatewaySecretTest {
 
         @MockitoBean
         private RetailGatewayOrderService service;
+
+        @MockitoBean
+        private RetailGatewayOrderViewService viewService;
 
         @Test
         @DisplayName("맞는 시크릿을 실으면 통과한다")
@@ -124,6 +127,9 @@ class GatewaySecretTest {
 
         @MockitoBean
         private RetailGatewayOrderService service;
+
+        @MockitoBean
+        private RetailGatewayOrderViewService viewService;
 
         @Test
         @DisplayName("헤더 없이도 통과한다 — 팀원이 시크릿을 안 맞춰도 로컬이 돌아간다")

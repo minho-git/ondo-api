@@ -10,6 +10,7 @@ import com.ondo.wholesale.retailgateway.dto.RetailOrderCreateRequest;
 import com.ondo.wholesale.retailgateway.dto.RetailOrderCreatedResponse;
 import com.ondo.wholesale.retailgateway.dto.RetailOrderItemRequest;
 import com.ondo.wholesale.retailgateway.dto.RetailOrderItemResponse;
+import com.ondo.wholesale.retailgateway.dto.RetailWholesalerResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -175,5 +176,13 @@ public class RetailGatewayOrderService {
                 orderAmount,
                 order.getOrderedAt(),
                 items);
+    }
+
+    // ── 도매처 ──────────────────────────────────────────────────
+
+    /** 주문서에 쓸 도매처 정보. 읽기라 트랜잭션이 따로 필요 없다. */
+    @Transactional(readOnly = true)
+    public List<RetailWholesalerResponse> wholesalers(List<Long> ids) {
+        return query.wholesalers(ids);
     }
 }

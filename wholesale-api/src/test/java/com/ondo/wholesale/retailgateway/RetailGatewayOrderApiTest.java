@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -245,6 +246,79 @@ class RetailGatewayOrderApiTest extends PostgresTestSupport {
 
         assertThat(count("SELECT count(*) FROM wholesale.partner"
                 + " WHERE wholesaler_id = " + 도매처 + " AND retailer_id = " + 소매처)).isEqualTo(1);
+    }
+
+    // ── 조회 (MUL-98) ───────────────────────────────────────────
+
+    @Test
+    @DisplayName("도매처 정보에 입금 계좌가 같이 온다")
+    void 도매처_정보를_준다() throws Exception {
+        jdbc.update("UPDATE wholesale.wholesaler SET bank_name='국민', bank_account_no='123-456',"
+                + " bank_account_holder='무드온' WHERE id = " + 도매처);
+
+        mvc.perform(get("/api/retail-gateway/wholesalers").param("ids", String.valueOf(도매처)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].name").value("무드온"))
+                .andExpect(jsonPath("$.data[0].bankName").value("국민"))
+                .andExpect(jsonPath("$.data[0].bankAccountNo").value("123-456"));
+    }
+
+    @Test
+    @DisplayName("계좌를 안 넣은 도매처는 계좌가 비어 온다 — 소매가 계좌이체를 막는 근거다")
+    void 계좌가_없으면_빈다() throws Exception {
+        mvc.perform(get("/api/retail-gateway/wholesalers").param("ids", String.valueOf(도매처)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].bankName").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("접수한 주문을 되읽으면 상태와 라인이 온다")
+    void 주문을_되읽는다() throws Exception {
+        접수(7101, 도매처, "{ \"variantId\": 9211, \"qty\": 3, \"expectedUnitPrice\": 12500 }");
+
+        mvc.perform(get("/api/retail-gateway/orders")
+                        .param("retailerId", String.valueOf(소매처))
+                        .param("retailOrderIds", "7101"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].retailOrderId").value(7101))
+                // 상태를 도매가 만들어 내린다. 소매가 같은 규칙을 또 짜면 두 화면이 갈린다
+                .andExpect(jsonPath("$.data[0].statusKey").value("NEW"))
+                .andExpect(jsonPath("$.data[0].statusLabel").value("신규 주문"))
+                .andExpect(jsonPath("$.data[0].cancellable").value(true))
+                .andExpect(jsonPath("$.data[0].amount").value(37500))
+                .andExpect(jsonPath("$.data[0].agentName").value("박삼촌"))
+                .andExpect(jsonPath("$.data[0].wholesaler.storeBuilding").doesNotExist())
+                .andExpect(jsonPath("$.data[0].items[0].qty").value(3))
+                // 아무것도 안 나갔으니 전부 아직 못 받은 것이다
+                .andExpect(jsonPath("$.data[0].items[0].receivedQty").value(0))
+                .andExpect(jsonPath("$.data[0].items[0].backorderQty").value(3));
+    }
+
+    @Test
+    @DisplayName("남의 소매처 주문서 번호를 넣어도 안 나온다")
+    void 남의_주문은_안_준다() throws Exception {
+        접수(7102, 도매처, "{ \"variantId\": 9211, \"qty\": 1, \"expectedUnitPrice\": 12500 }");
+
+        // 주문서 id 는 소매가 보낸 값이라 그것만 믿으면 남의 주문을 읽을 수 있다
+        mvc.perform(get("/api/retail-gateway/orders")
+                        .param("retailerId", "9999")
+                        .param("retailOrderIds", "7102"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("주문서 여럿을 한 번에 되읽는다")
+    void 여러_주문서를_한번에_읽는다() throws Exception {
+        접수(7103, 도매처, "{ \"variantId\": 9211, \"qty\": 1, \"expectedUnitPrice\": 12500 }");
+        접수(7104, 도매처, "{ \"variantId\": 9212, \"qty\": 1, \"expectedUnitPrice\": 12500 }");
+
+        mvc.perform(get("/api/retail-gateway/orders")
+                        .param("retailerId", String.valueOf(소매처))
+                        .param("retailOrderIds", "7103,7104"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(2));
     }
 
     // ── 거들기 ──────────────────────────────────────────────────
