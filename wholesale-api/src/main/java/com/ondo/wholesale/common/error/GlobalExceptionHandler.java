@@ -5,6 +5,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -38,6 +39,14 @@ public class GlobalExceptionHandler {
         List<ErrorResponse.FieldError> errors = ex.getConstraintViolations().stream()
                 .map(v -> new ErrorResponse.FieldError(lastNode(v.getPropertyPath().toString()), v.getMessage()))
                 .toList();
+        return build(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultMessage(), errors);
+    }
+
+    /** 필수 요청 헤더 누락(예: Idempotency-Key) — 클라이언트 요청 문제라 400 이다. */
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ErrorResponse> handleMissingHeader(MissingRequestHeaderException ex) {
+        List<ErrorResponse.FieldError> errors = List.of(
+                new ErrorResponse.FieldError(ex.getHeaderName(), "필수 헤더가 없습니다."));
         return build(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultMessage(), errors);
     }
 
