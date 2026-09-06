@@ -11,12 +11,12 @@ import java.util.List;
  * <p>{@code isShippable} = shippedAt 이 null 이고 살아있는 항목 1건 이상 — 재고 검증은 안
  * 들어 있어 true 여도 확정이 INSUFFICIENT_STOCK 으로 실패할 수 있다(버튼 활성용, 성공 보장 아님).
  * {@code packings}가 따로 있는 이유 — 합쳐진 items 만으로는 주문 역추적(CS)이 안 된다.
+ * 소매처 코드는 계약에서 뺐다 — 소매 시스템 값이라 필요해지면 소매 연동으로 후속한다.
  */
 public record OutboundDetailResponse(
         Long id,
         Integer outboundNumber,
         Long retailerId,
-        String retailerCode,
         String retailerName,
         OffsetDateTime createdAt,
         OffsetDateTime shippedAt,

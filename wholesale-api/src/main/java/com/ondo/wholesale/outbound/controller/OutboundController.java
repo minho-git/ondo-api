@@ -13,6 +13,8 @@ import com.ondo.wholesale.outbound.dto.PackingItemRowResponse;
 import com.ondo.wholesale.outbound.dto.PackingRetailerResponse;
 import com.ondo.wholesale.outbound.dto.StatementResponse;
 import com.ondo.wholesale.outbound.service.OutboundCommandService;
+import com.ondo.wholesale.outbound.service.OutboundListQuery;
+import com.ondo.wholesale.outbound.service.OutboundQueryService;
 import com.ondo.wholesale.outbound.service.PackingQueueQueryService;
 import com.ondo.wholesale.security.WholesalePrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,6 +49,7 @@ public class OutboundController {
 
     private final PackingQueueQueryService packingQueueQueryService;
     private final OutboundCommandService outboundCommandService;
+    private final OutboundQueryService outboundQueryService;
 
     @Operation(summary = "포장 대기 — 소매처 목록 (아코디언 헤더)", description = """
             한 행 = 소매처 하나. 페이징 없음(지금 대기 중인 소매처만이라 수가 제한적).
@@ -82,6 +85,7 @@ public class OutboundController {
             에러: 400 `VALIDATION_FAILED`""")
     @GetMapping("/outbounds/retailers")
     public ApiResponse<List<OutboundRetailerResponse>> outboundRetailers(
+            @AuthenticationPrincipal WholesalePrincipal principal,
             @RequestParam(required = false) OutboundStatusFilter status,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -89,9 +93,8 @@ public class OutboundController {
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "20") Integer size,
             @RequestParam(required = false) String sort) {
-        return ApiResponse.paged(
-                OutboundStubExamples.outboundRetailers(),
-                new ApiResponse.PageMeta(0, 20, 12, 1));
+        OutboundListQuery query = OutboundListQuery.of(status, q, null, from, to, page, size, sort);
+        return outboundQueryService.retailers(principal.wholesalerId(), query);
     }
 
     @Operation(summary = "출고 — 봉투 목록 (아코디언 펼침)", description = """
@@ -102,6 +105,7 @@ public class OutboundController {
             에러: 400 `VALIDATION_FAILED` / 404 `RESOURCE_NOT_FOUND`""")
     @GetMapping("/outbounds")
     public ApiResponse<List<OutboundSummaryResponse>> outbounds(
+            @AuthenticationPrincipal WholesalePrincipal principal,
             @RequestParam(required = false) Long retailerId,
             @RequestParam(required = false) OutboundStatusFilter status,
             @RequestParam(required = false) String q,
@@ -110,9 +114,8 @@ public class OutboundController {
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "20") Integer size,
             @RequestParam(required = false) String sort) {
-        return ApiResponse.paged(
-                OutboundStubExamples.outboundSummaries(),
-                new ApiResponse.PageMeta(0, 20, 3, 1));
+        OutboundListQuery query = OutboundListQuery.of(status, q, retailerId, from, to, page, size, sort);
+        return outboundQueryService.list(principal.wholesalerId(), query);
     }
 
     @Operation(summary = "포장 완료 (봉투 생성)", description = """
@@ -135,8 +138,9 @@ public class OutboundController {
 
             에러: 404 `RESOURCE_NOT_FOUND`""")
     @GetMapping("/outbounds/{outboundId}")
-    public OutboundDetailResponse outboundDetail(@PathVariable Long outboundId) {
-        return OutboundStubExamples.detailBeforeShip();
+    public OutboundDetailResponse outboundDetail(@AuthenticationPrincipal WholesalePrincipal principal,
+                                                 @PathVariable Long outboundId) {
+        return outboundQueryService.detail(principal.wholesalerId(), outboundId);
     }
 
     @Operation(summary = "출고 확정 — 재고가 실제로 줄어드는 유일한 지점", description = """

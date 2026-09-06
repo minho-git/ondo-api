@@ -6,6 +6,7 @@ import com.ondo.wholesale.common.trace.TraceIdFilter;
 import com.ondo.wholesale.config.SecurityConfig;
 import com.ondo.wholesale.outbound.controller.OutboundController;
 import com.ondo.wholesale.outbound.service.OutboundCommandService;
+import com.ondo.wholesale.outbound.service.OutboundQueryService;
 import com.ondo.wholesale.outbound.service.PackingQueueQueryService;
 import com.ondo.wholesale.security.ApprovedAuthorizationManager;
 import com.ondo.wholesale.security.RestAccessDeniedHandler;
@@ -41,14 +42,8 @@ class OutboundStubApiTest {
     private PackingQueueQueryService packingQueueQueryService;
     @MockitoBean
     private OutboundCommandService outboundCommandService;
-
-    @Test
-    void 봉투목록은_data배열과_페이징meta를_함께_내린다() throws Exception {
-        mvc.perform(get("/api/wholesale/outbounds").with(TestSecuritySupport.approved()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].shippedAt").value((Object) null))
-                .andExpect(jsonPath("$.meta.totalElements").value(3));
-    }
+    @MockitoBean
+    private OutboundQueryService outboundQueryService;
 
     @Test
     void 출고확정은_shippedAt과_장끼번호를_채워_상세를_내린다() throws Exception {

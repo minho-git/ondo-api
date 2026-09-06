@@ -10,15 +10,14 @@ import java.util.List;
  *
  * <p>{@code statementNumber}는 날짜별로 1부터 다시 시작하는 정수라 {@code shippedAt} 없이는
  * 장끼를 특정할 수 없다 — 표시 코드(JG-20260814-001) 조립은 프론트. 금액 컬럼은 화면에 없어 안 담는다.
+ * 소매처 코드·배송지는 계약에서 뺐다 — 소매 시스템 값이라 필요해지면 소매 연동으로 후속한다.
  */
 public record StatementResponse(
         Integer statementNumber,
         Integer outboundNumber,
         OffsetDateTime shippedAt,
         String sellerName,
-        String retailerCode,
         String retailerName,
-        String deliveryAddress,
         ReceiveBy receiveBy,
         int totalQty,
         List<Item> items
