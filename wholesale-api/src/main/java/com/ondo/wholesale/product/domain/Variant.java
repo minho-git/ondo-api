@@ -25,6 +25,7 @@ import java.time.OffsetDateTime;
  * <p>product 참조는 스키마의 중복 보유(D-055)를 그대로 매핑한 것으로 불변이다.
  * stock_qty·avg_cost 는 재고 티켓(MUL-72)의 도메인 메서드로만 바뀐다. reserved_qty 는
  * 주문의 배분·배분취소(MUL-47)가 {@link #reserve}/{@link #release}로만 바꾼다.
+ * 출고 확정(MUL-49)은 {@link #ship}으로만 둘을 함께 줄인다.
  */
 @Entity
 @Table(name = "variant", schema = "wholesale")
@@ -88,6 +89,12 @@ public class Variant {
 
     /** 배분취소가 예약을 되돌린다 — 가용재고가 돌아온다. */
     public void release(int qty) {
+        this.reservedQty -= qty;
+    }
+
+    /** 출고 확정이 실물을 내보낸다 — 실재고와 예약이 함께 줄어든다. 검증은 호출부가 락 아래서 끝낸다. */
+    public void ship(int qty) {
+        this.stockQty -= qty;
         this.reservedQty -= qty;
     }
 
