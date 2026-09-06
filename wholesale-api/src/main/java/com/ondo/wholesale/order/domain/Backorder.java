@@ -59,6 +59,11 @@ public class Backorder {
         this.status = BackorderStatus.RESOLVED;
     }
 
+    /** 배분취소가 해소를 되돌린다 — "해소했던 미송이 되살아난다"는 계약. */
+    public void reopen() {
+        this.status = BackorderStatus.OPEN;
+    }
+
     @Builder
     private Backorder(Long orderItemId, int qty) {
         this.orderItemId = orderItemId;

@@ -67,6 +67,11 @@ public class OrderItem {
         this.allocatedQty += allocateQty;
     }
 
+    /** 배분취소가 되돌린다. */
+    public void deallocate(int qty) {
+        this.allocatedQty -= qty;
+    }
+
     OrderItem(Order order, Long variantId, int qty, int unitPrice) {
         this.order = order;
         this.variantId = variantId;

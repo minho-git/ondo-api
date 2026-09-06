@@ -16,6 +16,7 @@ import com.ondo.wholesale.order.dto.response.OrderSummaryResponse;
 import com.ondo.wholesale.order.service.OrderCommandService;
 import com.ondo.wholesale.order.service.OrderQueryService;
 import com.ondo.wholesale.order.service.PackingCommandService;
+import com.ondo.wholesale.order.service.PackingQueryService;
 import com.ondo.wholesale.security.ApprovedAuthorizationManager;
 import com.ondo.wholesale.security.RestAccessDeniedHandler;
 import com.ondo.wholesale.security.RestAuthenticationEntryPoint;
@@ -60,6 +61,9 @@ class OrderQueryApiTest {
 
     @MockitoBean
     private PackingCommandService packingCommandService;
+
+    @MockitoBean
+    private PackingQueryService packingQueryService;
 
     @Test
     void 주문목록은_data배열과_페이징meta를_함께_내린다() throws Exception {

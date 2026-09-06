@@ -58,6 +58,11 @@ public class PackingItem {
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
+    /** 배분취소 — 행은 남기고 deleted_at 만 찍는다. */
+    public void softDelete() {
+        this.deletedAt = OffsetDateTime.now();
+    }
+
     PackingItem(Packing packing, Long orderItemId, Long backorderId, Long allocationBatchId, int qty) {
         this.packing = packing;
         this.orderItemId = orderItemId;

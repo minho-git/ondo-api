@@ -8,6 +8,7 @@ import com.ondo.wholesale.order.domain.BackorderStatus;
 import com.ondo.wholesale.order.domain.Order;
 import com.ondo.wholesale.order.domain.OrderItem;
 import com.ondo.wholesale.order.domain.Packing;
+import com.ondo.wholesale.order.domain.PackingItem;
 import com.ondo.wholesale.order.repository.AllocationBatchRepository;
 import com.ondo.wholesale.order.repository.BackorderRepository;
 import com.ondo.wholesale.order.repository.PackingRepository;
@@ -108,12 +109,55 @@ public class AllocationWriter {
         return packingRepository.save(packing);
     }
 
+    /**
+     * 배분취소 — 살아있는 항목의 배분·예약을 되돌리고 미송을 되살린다. 부분 취소는 없다.
+     *
+     * <p>미송 부활은 세 갈래다: 연결(backorder_id)된 미송은 OPEN 복귀, 연결이 없고 그 라인에
+     * OPEN 미송이 이미 있으면 그대로(잔량은 qty − allocated 파생이라 자동으로 는다),
+     * 둘 다 없으면(확정 때 전량 배분했던 라인) 새 미송을 만든다.
+     */
+    public void cancelAllocation(Order order, Packing packing) {
+        List<PackingItem> alive = packing.getItems().stream()
+                .filter(i -> i.getDeletedAt() == null).toList();
+        Map<Long, OrderItem> items = order.getItems().stream()
+                .collect(Collectors.toMap(OrderItem::getId, Function.identity()));
+        Map<Long, Variant> variants = lockVariantIds(alive.stream()
+                .map(i -> items.get(i.getOrderItemId()).getVariantId()).distinct().sorted().toList());
+
+        for (PackingItem packingItem : alive) {
+            OrderItem item = items.get(packingItem.getOrderItemId());
+            item.deallocate(packingItem.getQty());
+            variants.get(item.getVariantId()).release(packingItem.getQty());
+            packingItem.softDelete();
+            reviveBackorder(item, packingItem.getBackorderId());
+        }
+    }
+
+    private void reviveBackorder(OrderItem item, Long linkedBackorderId) {
+        if (linkedBackorderId != null) {
+            backorderRepository.findById(linkedBackorderId).ifPresent(Backorder::reopen);
+            return;
+        }
+        boolean hasOpen = backorderRepository
+                .findFirstByOrderItemIdAndStatusOrderByCreatedAtAsc(item.getId(), BackorderStatus.OPEN)
+                .isPresent();
+        int remainder = item.getQty() - item.getAllocatedQty();
+        if (!hasOpen && remainder > 0) {
+            backorderRepository.save(Backorder.builder()
+                    .orderItemId(item.getId()).qty(remainder).build());
+        }
+    }
+
     /** 배분에 걸린 variant 행을 id 오름차순으로 잠근다 — 재고 경합의 직렬화 지점. */
     private Map<Long, Variant> lockVariants(Map<Long, OrderItem> items, List<LineAllocation> allocations) {
         List<Long> variantIds = allocations.stream()
                 .filter(a -> a.allocateQty() > 0)
                 .map(a -> items.get(a.orderItemId()).getVariantId())
                 .distinct().sorted(Comparator.naturalOrder()).toList();
+        return lockVariantIds(variantIds);
+    }
+
+    private Map<Long, Variant> lockVariantIds(List<Long> variantIds) {
         if (variantIds.isEmpty()) {
             return Map.of();
         }
