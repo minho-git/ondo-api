@@ -45,8 +45,11 @@ public class SecurityConfig {
      * 그대로 드러나서, 공개해두면 공격면을 알려주는 셈이 된다.
      */
     private static final String[] DOCS_PATHS = {
-            "/v3/api-docs",      // OpenAPI JSON. springdoc 이 만든다
-            "/v3/api-docs/**",
+            // 기본값 /v3/api-docs 에서 옮겼다 (MUL-110). 배포에서 도매와 같은 ALB 뒤에
+            // 있는데 둘 다 기본 경로를 쓰고 있어서, 문서를 열면 한쪽만 보였다.
+            // application.yml 의 springdoc.api-docs.path 와 같아야 한다
+            "/v3/api-docs-retail",
+            "/v3/api-docs-retail/**",
             "/docs",             // Scalar 화면
             "/docs/**"
     };

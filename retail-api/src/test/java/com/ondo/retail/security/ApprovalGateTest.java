@@ -84,10 +84,24 @@ class ApprovalGateTest {
         assertThat(응답.body()).contains("UNAUTHORIZED");
     }
 
+    /**
+     * 경로가 {@code /v3/api-docs-retail} 인 건 배포에서 도매와 같은 ALB 뒤에 있어서다
+     * (MUL-110). 둘 다 기본 경로를 쓰면 ALB 가 한쪽으로만 보낼 수 있어 문서가 하나만 열린다.
+     */
     @Test
     @DisplayName("문서는 로그인 없이 열린다")
     void 문서는_공개() throws Exception {
-        assertThat(get("/v3/api-docs", null).statusCode()).isEqualTo(200);
+        assertThat(get("/v3/api-docs-retail", null).statusCode()).isEqualTo(200);
+        assertThat(get("/docs/index.html", null).statusCode()).isEqualTo(200);
+    }
+
+    @Test
+    @DisplayName("옮기기 전 문서 주소는 이제 소매 것이 아니다 — 배포에서 도매가 쓴다")
+    void 옛_문서_주소는_안_연다() throws Exception {
+        // 여기가 200 이 되면 배포에서 ALB 규칙과 어긋난다. /v3/api-docs 로 온 요청은
+        // 도매로 가는데, 소매도 같은 주소에 문서를 만들어두면 어느 쪽이 뜨는지가
+        // 라우팅 우선순위에 달리게 된다
+        assertThat(get("/v3/api-docs", null).statusCode()).isNotEqualTo(200);
     }
 
     private String login(String email) throws Exception {

@@ -127,6 +127,58 @@ resource "aws_lb_listener_rule" "retail" {
   }
 }
 
+# ⚠️ 임시 개방 (MUL-110). 운영 띄우기 전에 지운다 — MUL-103.
+#
+# 창은이가 로컬 화면으로 배포 API 를 부르며 개발하려면 계약을 볼 데가 있어야 한다.
+# 스칼라는 API 서버 자기 자신에서 뜨는 화면이라, 여기서 누르면 CORS 도 쿠키 문제도
+# 안 생긴다 — 같은 출처끼리라서다.
+#
+# 여는 순간 우리 API 전체 구조가 인터넷에 공개된다. 지금은 가짜 데이터뿐이라
+# 실질 피해가 없지만, 운영 전에 반드시 닫아야 하는 항목이 둘 늘어난 것이다.
+#
+# 두 앱의 화면 주소는 원래 달랐다.
+#
+#   소매   /docs        (정적 파일 + 리다이렉트)
+#   도매   /docs.html   (Scalar)
+#
+# 겹친 건 springdoc 이 만드는 JSON 하나뿐이었다. 그래서 소매를
+# /v3/api-docs-retail 로 옮겼다(retail-api/application.yml). 도매를 안 옮긴 건
+# 채빈 영역이어서다.
+resource "aws_lb_listener_rule" "retail_docs" {
+  listener_arn = aws_lb_listener.https.arn
+  priority     = 150
+
+  condition {
+    path_pattern {
+      values = ["/docs", "/docs/*", "/v3/api-docs-retail", "/v3/api-docs-retail/*"]
+    }
+  }
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.retail.arn
+  }
+}
+
+# ⚠️ 임시 개방 (MUL-110). 위와 같이 운영 전에 지운다 — MUL-103.
+#
+# 도매 문서는 채빈 영역이라 앱은 안 건드렸다. 주소를 그대로 두고 ALB 에서만 보낸다.
+resource "aws_lb_listener_rule" "wholesale_docs" {
+  listener_arn = aws_lb_listener.https.arn
+  priority     = 160
+
+  condition {
+    path_pattern {
+      values = ["/docs.html", "/v3/api-docs", "/v3/api-docs/*"]
+    }
+  }
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.wholesale.arn
+  }
+}
+
 resource "aws_lb_listener_rule" "wholesale" {
   listener_arn = aws_lb_listener.https.arn
   priority     = 200
