@@ -23,8 +23,8 @@ import java.time.OffsetDateTime;
  * 부분 유니크(variant_size_uk)가 살아있는 행에서만 걸려 사이즈 재추가를 허용한다 (D-053).
  *
  * <p>product 참조는 스키마의 중복 보유(D-055)를 그대로 매핑한 것으로 불변이다.
- * stock_qty·reserved_qty·avg_cost 는 재고 티켓(MUL-72)의 도메인 메서드로만 바뀐다 —
- * 이 티켓(상품)에서는 읽기만 한다.
+ * stock_qty·avg_cost 는 재고 티켓(MUL-72)의 도메인 메서드로만 바뀐다. reserved_qty 는
+ * 주문의 배분·배분취소(MUL-47)가 {@link #reserve}/{@link #release}로만 바꾼다.
  */
 @Entity
 @Table(name = "variant", schema = "wholesale")
@@ -79,6 +79,16 @@ public class Variant {
         this.size = size;
         this.variantSeq = variantSeq;
         this.avgCost = BigDecimal.ZERO;
+    }
+
+    /** 배분이 잡은 예약 — 가용재고(stock − reserved) 검증은 호출부(AllocationWriter)가 락 아래서 끝낸다. */
+    public void reserve(int qty) {
+        this.reservedQty += qty;
+    }
+
+    /** 배분취소가 예약을 되돌린다 — 가용재고가 돌아온다. */
+    public void release(int qty) {
+        this.reservedQty -= qty;
     }
 
     public void softDelete() {

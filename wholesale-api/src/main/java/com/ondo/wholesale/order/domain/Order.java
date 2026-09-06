@@ -97,6 +97,17 @@ public class Order {
         this.orderedAt = orderedAt;
     }
 
+    /** 확정 전이. NEW 인지 검증은 OrderCommandService 가 끝낸 뒤다. */
+    public void confirm() {
+        this.status = OrderStatus.CONFIRMED;
+        this.confirmedAt = OffsetDateTime.now();
+    }
+
+    /** 취소 전이. NEW 전용 — 확정 주문의 409 는 OrderCommandService 가 막는다. */
+    public void cancel() {
+        this.status = OrderStatus.CANCELLED;
+    }
+
     /** 라인 한 건을 붙인다. 양쪽 참조를 함께 세운다. */
     public OrderItem addItem(Long variantId, int qty, int unitPrice) {
         OrderItem item = new OrderItem(this, variantId, qty, unitPrice);

@@ -65,6 +65,28 @@ public final class OrderFixture {
                 """, Long.class, orderItemId, qty, status);
     }
 
+    public static long 배분_배치를_넣는다(JdbcTemplate jdbc, long wholesalerId) {
+        return jdbc.queryForObject("""
+                insert into wholesale.allocation_batch (wholesaler_id) values (?) returning id
+                """, Long.class, wholesalerId);
+    }
+
+    public static long 포장을_넣는다(JdbcTemplate jdbc, long orderId, String status) {
+        return jdbc.queryForObject("""
+                insert into wholesale.packing (order_id, status) values (?, ?) returning id
+                """, Long.class, orderId, status);
+    }
+
+    /** deleted 가 참이면 배분취소된 항목으로 심는다. */
+    public static long 포장항목을_넣는다(JdbcTemplate jdbc, long packingId, long orderItemId,
+                                  Long backorderId, long batchId, int qty, boolean deleted) {
+        return jdbc.queryForObject("""
+                insert into wholesale.packing_item
+                    (packing_id, order_item_id, backorder_id, allocation_batch_id, qty, deleted_at)
+                values (?, ?, ?, ?, ?, case when ? then now() end) returning id
+                """, Long.class, packingId, orderItemId, backorderId, batchId, qty, deleted);
+    }
+
     /** 출고 = 미수 발생(+). */
     public static void 원장_출고를_넣는다(JdbcTemplate jdbc, long partnerId, long orderId, long amount) {
         원장을_넣는다(jdbc, partnerId, orderId, "OUTBOUND", amount);

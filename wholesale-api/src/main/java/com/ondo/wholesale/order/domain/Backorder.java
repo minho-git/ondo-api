@@ -54,6 +54,16 @@ public class Backorder {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    /** 잔량이 0 이 됐을 때만 부른다 — 포장 준비가 라인을 전량 배분한 순간이다. */
+    public void resolve() {
+        this.status = BackorderStatus.RESOLVED;
+    }
+
+    /** 배분취소가 해소를 되돌린다 — "해소했던 미송이 되살아난다"는 계약. */
+    public void reopen() {
+        this.status = BackorderStatus.OPEN;
+    }
+
     @Builder
     private Backorder(Long orderItemId, int qty) {
         this.orderItemId = orderItemId;

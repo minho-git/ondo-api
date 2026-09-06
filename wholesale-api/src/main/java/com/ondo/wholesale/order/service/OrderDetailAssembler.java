@@ -7,13 +7,11 @@ import com.ondo.wholesale.order.dto.response.OrderDetailResponse;
 import com.ondo.wholesale.order.dto.response.OrderItemResponse;
 import com.ondo.wholesale.order.dto.response.OrderStatusResponse;
 import com.ondo.wholesale.order.repository.PartnerRepository;
-import com.ondo.wholesale.product.domain.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -30,13 +28,9 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class OrderDetailAssembler {
 
-    /** 라인 표시에 필요한 변형 스냅샷 한 줄. */
-    private record VariantInfo(int productNumber, int variantNumber, String productName,
-                               String colorName, Size size, int availableQty) {
-    }
-
     private final PartnerRepository partnerRepository;
     private final OrderSummaryReader reader;
+    private final VariantInfoReader variantInfoReader;
     private final NamedParameterJdbcTemplate jdbc;
 
     public OrderDetailResponse assemble(Order order) {
@@ -44,7 +38,7 @@ public class OrderDetailAssembler {
         List<OrderItem> items = order.getItems().stream()
                 .sorted(Comparator.comparing(OrderItem::getId)).toList();
 
-        Map<Long, VariantInfo> variants = variantInfos(
+        Map<Long, VariantInfoReader.VariantInfo> variants = variantInfoReader.read(
                 items.stream().map(OrderItem::getVariantId).distinct().toList());
         Set<Long> openBackorderItemIds = openBackorderItemIds(
                 items.stream().map(OrderItem::getId).toList());
@@ -73,7 +67,7 @@ public class OrderDetailAssembler {
                 orderAmount, totalQty, itemRows);
     }
 
-    private OrderItemResponse itemRow(OrderItem item, VariantInfo variant, boolean hasOpenBackorder) {
+    private OrderItemResponse itemRow(OrderItem item, VariantInfoReader.VariantInfo variant, boolean hasOpenBackorder) {
         int unallocated = item.getQty() - item.getAllocatedQty();
         return new OrderItemResponse(
                 item.getId(), item.getVariantId(),
@@ -85,24 +79,6 @@ public class OrderDetailAssembler {
                 hasOpenBackorder ? unallocated : 0);
     }
 
-    private Map<Long, VariantInfo> variantInfos(List<Long> variantIds) {
-        Map<Long, VariantInfo> result = new HashMap<>();
-        jdbc.query("""
-                select v.id, v.variant_seq, v.size, v.stock_qty - v.reserved_qty as available,
-                       p.product_number, p.name as product_name, c.name as color_name
-                from wholesale.variant v
-                join wholesale.product p       on p.id = v.product_id
-                join wholesale.color_option co on co.id = v.color_option_id
-                join common.color c            on c.id = co.color_id
-                where v.id in (:ids)
-                """, Map.of("ids", variantIds), rs -> {
-            result.put(rs.getLong("id"), new VariantInfo(
-                    rs.getInt("product_number"), rs.getInt("variant_seq"),
-                    rs.getString("product_name"), rs.getString("color_name"),
-                    Size.valueOf(rs.getString("size")), rs.getInt("available")));
-        });
-        return result;
-    }
 
     private Set<Long> openBackorderItemIds(List<Long> orderItemIds) {
         return new HashSet<>(jdbc.queryForList("""
