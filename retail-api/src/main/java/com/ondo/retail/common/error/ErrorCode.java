@@ -30,7 +30,22 @@ public enum ErrorCode {
     // 장바구니 · 주문
     ORDER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "한 번에 담을 수 있는 수량을 넘었어요"),
     UNORDERABLE_ITEM_INCLUDED(HttpStatus.BAD_REQUEST, "주문할 수 없는 상품이 있어요"),
-    LISTING_CLOSED(HttpStatus.CONFLICT, "판매가 끝난 상품이에요");
+    LISTING_CLOSED(HttpStatus.CONFLICT, "판매가 끝난 상품이에요"),
+
+    // 같은 Idempotency-Key 로 이미 접수된 주문이 있을 때 (MUL-98).
+    //
+    // 연타를 막는 열쇠인데, 첫 요청이 이미 끝났으면 장바구니가 비어 있어 두 번째
+    // 요청은 "없는 줄" 로 걸린다. 그걸 400 으로 내보내면 화면이 "입력을 확인해주세요"
+    // 를 띄우는데, 사용자는 잘못한 게 없고 주문은 이미 됐다.
+    //
+    // 계약은 "처음 결과 그대로" 지만 실패분을 안 남겨서 아직 못 한다(숙제 7번).
+    // 그때까지는 주문 id 를 실어 이 코드로 알린다 — 화면이 주문 상세로 보내면 된다.
+    ORDER_ALREADY_PLACED(HttpStatus.CONFLICT, "이미 접수된 주문이에요"),
+
+    // 주문 접수가 도매처 전부에서 거절됐을 때 (MUL-98).
+    // 계약이 "전부 안 되면 통합 주문을 안 만든다 — 그때는 502" 다.
+    // 일부만 실패한 건 여기 안 온다. 그건 에러가 아니라 결과라 201 로 나간다.
+    UPSTREAM_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "지금 주문을 넣을 수 없어요. 장바구니는 그대로예요");
 
     private final HttpStatus status;
     private final String message;
