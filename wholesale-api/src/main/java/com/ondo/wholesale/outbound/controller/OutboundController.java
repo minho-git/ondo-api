@@ -1,7 +1,9 @@
-package com.ondo.wholesale.outbound;
+package com.ondo.wholesale.outbound.controller;
 
 import com.ondo.wholesale.common.response.ApiResponse;
 import com.ondo.wholesale.order.ReceiveBy;
+import com.ondo.wholesale.outbound.OutboundStatusFilter;
+import com.ondo.wholesale.outbound.OutboundStubExamples;
 import com.ondo.wholesale.outbound.dto.OutboundCreateRequest;
 import com.ondo.wholesale.outbound.dto.OutboundCreatedResponse;
 import com.ondo.wholesale.outbound.dto.OutboundDetailResponse;
@@ -10,10 +12,14 @@ import com.ondo.wholesale.outbound.dto.OutboundSummaryResponse;
 import com.ondo.wholesale.outbound.dto.PackingItemRowResponse;
 import com.ondo.wholesale.outbound.dto.PackingRetailerResponse;
 import com.ondo.wholesale.outbound.dto.StatementResponse;
+import com.ondo.wholesale.outbound.service.PackingQueueQueryService;
+import com.ondo.wholesale.security.WholesalePrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,13 +33,18 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * 출고 계약 스텁 (MUL-83) — 원본: api-lite/06_출고. example 응답만 반환하며
- * 실구현이 서비스 계층으로 교체한다. 인증·봉투는 실서버와 동일하게 동작한다.
+ * 출고 API (MUL-49) — 원본 계약: api-lite/06_출고.
+ *
+ * <p>출고 확정(ship)·장끼(statement)는 아직 계약 스텁(MUL-83)이다 — 재고 원장
+ * 부품(MUL-72)이 합류한 뒤 실구현으로 교체한다.
  */
 @Tag(name = "06 출고")
 @RestController
 @RequestMapping("/api/wholesale")
+@RequiredArgsConstructor
 public class OutboundController {
+
+    private final PackingQueueQueryService packingQueueQueryService;
 
     @Operation(summary = "포장 대기 — 소매처 목록 (아코디언 헤더)", description = """
             한 행 = 소매처 하나. 페이징 없음(지금 대기 중인 소매처만이라 수가 제한적).
@@ -41,9 +52,10 @@ public class OutboundController {
             펼칠 때 같은 `q`·`receiveBy`를 넘긴다.""")
     @GetMapping("/packing-items/retailers")
     public List<PackingRetailerResponse> packingRetailers(
+            @AuthenticationPrincipal WholesalePrincipal principal,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) ReceiveBy receiveBy) {
-        return OutboundStubExamples.packingRetailers();
+        return packingQueueQueryService.retailers(principal.wholesalerId(), q, receiveBy);
     }
 
     @Operation(summary = "포장 대기 — 항목 목록 (아코디언 펼침)", description = """
@@ -54,10 +66,11 @@ public class OutboundController {
             에러: 404 `RESOURCE_NOT_FOUND`""")
     @GetMapping("/packing-items")
     public List<PackingItemRowResponse> packingItems(
+            @AuthenticationPrincipal WholesalePrincipal principal,
             @RequestParam(required = false) Long retailerId,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) ReceiveBy receiveBy) {
-        return OutboundStubExamples.packingItems();
+        return packingQueueQueryService.items(principal.wholesalerId(), retailerId, q, receiveBy);
     }
 
     @Operation(summary = "출고 — 소매처 목록 (아코디언 헤더)", description = """
