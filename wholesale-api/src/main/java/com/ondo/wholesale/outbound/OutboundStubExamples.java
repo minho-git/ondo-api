@@ -1,9 +1,6 @@
 package com.ondo.wholesale.outbound;
 
-import com.ondo.wholesale.order.PackingStatus;
 import com.ondo.wholesale.order.ReceiveBy;
-import com.ondo.wholesale.order.dto.response.PackingItemResponse;
-import com.ondo.wholesale.outbound.dto.OutboundCreatedResponse;
 import com.ondo.wholesale.outbound.dto.OutboundDetailResponse;
 import com.ondo.wholesale.outbound.dto.OutboundItemResponse;
 import com.ondo.wholesale.outbound.dto.OutboundRetailerResponse;
@@ -37,17 +34,6 @@ public final class OutboundStubExamples {
         return List.of(new OutboundSummaryResponse(
                 8801L, 1, "오버핏 코튼 티셔츠", 2, ReceiveBy.RETAILER,
                 OffsetDateTime.of(2026, 8, 12, 14, 20, 0, 0, KST), null, null, 30));
-    }
-
-    public static OutboundCreatedResponse createdOutbound() {
-        return new OutboundCreatedResponse(
-                8801L, 1, 3307L, "부산 상사", null, null,
-                OffsetDateTime.of(2026, 8, 12, 14, 20, 0, 0, KST), 30,
-                List.of(new OutboundCreatedResponse.Packing(
-                        7701L, 5601L, 1001, PackingStatus.PACKED,
-                        List.of(new PackingItemResponse(
-                                91101L, 88201L, 90231L, 18, 1,
-                                "오버핏 코튼 티셔츠", "블랙", Size.M, 12)))));
     }
 
     /** 출고 전(포장 완료) 상세 — isShippable true, shippedAt·statementNumber null. */

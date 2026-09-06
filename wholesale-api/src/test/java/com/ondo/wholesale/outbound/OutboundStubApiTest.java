@@ -5,6 +5,7 @@ import com.ondo.wholesale.common.response.ApiResponseBodyAdvice;
 import com.ondo.wholesale.common.trace.TraceIdFilter;
 import com.ondo.wholesale.config.SecurityConfig;
 import com.ondo.wholesale.outbound.controller.OutboundController;
+import com.ondo.wholesale.outbound.service.OutboundCommandService;
 import com.ondo.wholesale.outbound.service.PackingQueueQueryService;
 import com.ondo.wholesale.security.ApprovedAuthorizationManager;
 import com.ondo.wholesale.security.RestAccessDeniedHandler;
@@ -14,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -36,9 +36,11 @@ class OutboundStubApiTest {
     @Autowired
     private MockMvc mvc;
 
-    // 실구현으로 교체된 조회의 협력자 — 남은 스텁 검증에는 쓰지 않는다
+    // 실구현으로 교체된 엔드포인트의 협력자 — 남은 스텁 검증에는 쓰지 않는다
     @MockitoBean
     private PackingQueueQueryService packingQueueQueryService;
+    @MockitoBean
+    private OutboundCommandService outboundCommandService;
 
     @Test
     void 봉투목록은_data배열과_페이징meta를_함께_내린다() throws Exception {
@@ -46,18 +48,6 @@ class OutboundStubApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].shippedAt").value((Object) null))
                 .andExpect(jsonPath("$.meta.totalElements").value(3));
-    }
-
-    @Test
-    void 포장완료는_201로_PACKED_포장이_담긴_봉투를_내린다() throws Exception {
-        mvc.perform(post("/api/wholesale/outbounds")
-                        .with(TestSecuritySupport.approved())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{ \"packingItemIds\": [91101] }"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.shippedAt").value((Object) null))
-                .andExpect(jsonPath("$.data.statementNumber").value((Object) null))
-                .andExpect(jsonPath("$.data.packings[0].status").value("PACKED"));
     }
 
     @Test

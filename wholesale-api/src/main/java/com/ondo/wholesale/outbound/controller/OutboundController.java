@@ -12,6 +12,7 @@ import com.ondo.wholesale.outbound.dto.OutboundSummaryResponse;
 import com.ondo.wholesale.outbound.dto.PackingItemRowResponse;
 import com.ondo.wholesale.outbound.dto.PackingRetailerResponse;
 import com.ondo.wholesale.outbound.dto.StatementResponse;
+import com.ondo.wholesale.outbound.service.OutboundCommandService;
 import com.ondo.wholesale.outbound.service.PackingQueueQueryService;
 import com.ondo.wholesale.security.WholesalePrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -45,6 +46,7 @@ import java.util.List;
 public class OutboundController {
 
     private final PackingQueueQueryService packingQueueQueryService;
+    private final OutboundCommandService outboundCommandService;
 
     @Operation(summary = "포장 대기 — 소매처 목록 (아코디언 헤더)", description = """
             한 행 = 소매처 하나. 페이징 없음(지금 대기 중인 소매처만이라 수가 제한적).
@@ -122,8 +124,9 @@ public class OutboundController {
             `RECEIVE_BY_MIXED` / 404 `RESOURCE_NOT_FOUND` / 409 `PACKING_NOT_READY`""")
     @PostMapping("/outbounds")
     @ResponseStatus(HttpStatus.CREATED)
-    public OutboundCreatedResponse createOutbound(@RequestBody OutboundCreateRequest request) {
-        return OutboundStubExamples.createdOutbound();
+    public OutboundCreatedResponse createOutbound(@AuthenticationPrincipal WholesalePrincipal principal,
+                                                  @RequestBody OutboundCreateRequest request) {
+        return outboundCommandService.create(principal.wholesalerId(), request);
     }
 
     @Operation(summary = "출고 상세 (포장 상세 패널)", description = """
