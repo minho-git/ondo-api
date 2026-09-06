@@ -64,7 +64,33 @@ public enum ErrorCode {
     ALLOCATION_EXCEEDS_ORDER(HttpStatus.BAD_REQUEST, "배분 수량이 주문 수량을 넘을 수 없습니다."),
     ALLOCATION_EXCEEDS_REMAINING(HttpStatus.CONFLICT, "배분 수량이 남은 수량을 넘을 수 없습니다."),
     INSUFFICIENT_STOCK(HttpStatus.CONFLICT, "가용 재고가 부족합니다."),
-    DOCUMENT_FINALIZED(HttpStatus.CONFLICT, "이미 확정된 문서는 변경할 수 없습니다.");
+    DOCUMENT_FINALIZED(HttpStatus.CONFLICT, "이미 확정된 문서는 변경할 수 없습니다."),
+
+    // 재고·출고·미송·회원은 병렬로 구현하기로 해서 섹션을 미리 갈라 뒀다 — 각 작업은
+    // 자기 섹션 안만 고친다(다른 섹션을 만지면 머지가 꼬인다). 아래 코드들은 MUL-83
+    // 계약 스텁의 @Operation 자바독에서 그대로 옮겨 왔고, 문구는 실구현이 다듬어도 된다.
+
+    // ── 재고 (MUL-72) ──
+    DUPLICATE_LOT(HttpStatus.BAD_REQUEST, "같은 입고에 같은 로트를 두 번 넣을 수 없습니다."),
+    IDEMPOTENCY_KEY_REUSED(HttpStatus.CONFLICT, "이미 사용한 Idempotency-Key 에 다른 요청을 보낼 수 없습니다."),
+    STATE_CONFLICT(HttpStatus.CONFLICT, "지금 상태와 충돌하는 요청입니다."),
+    STOCK_BELOW_ZERO(HttpStatus.CONFLICT, "재고는 0 미만이 될 수 없습니다."),
+    STOCK_BELOW_ALLOCATED(HttpStatus.CONFLICT, "배분에 잡힌 수량 아래로는 재고를 줄일 수 없습니다."),
+
+    // ── 출고 (MUL-49) ──
+    DUPLICATE_PACKING_ITEM(HttpStatus.BAD_REQUEST, "같은 포장을 두 번 담을 수 없습니다."),
+    RETAILER_MIXED(HttpStatus.BAD_REQUEST, "한 출고에는 한 소매처의 포장만 담을 수 있습니다."),
+    RECEIVE_BY_MIXED(HttpStatus.BAD_REQUEST, "수령 방식이 다른 포장은 한 출고에 담을 수 없습니다."),
+    PACKING_NOT_READY(HttpStatus.CONFLICT, "출고에 담을 수 있는 상태의 포장이 아닙니다."),
+    OUTBOUND_EMPTY(HttpStatus.CONFLICT, "빈 출고는 확정할 수 없습니다."),
+
+    // ── 미송 (MUL-48) ──
+    DUPLICATE_BACKORDER(HttpStatus.BAD_REQUEST, "같은 미송을 두 번 담을 수 없습니다."),
+    BACKORDER_NOT_OPEN(HttpStatus.CONFLICT, "열려 있는 미송이 아닙니다."),
+
+    // ── 회원 (MUL-70·71) ──
+    // 심사 현황·재신청은 계약 스텁이 없어 선등록할 코드가 없다 — 구현이 이 자리에 채운다.
+    ;
 
     private final HttpStatus status;
     private final String defaultMessage;
