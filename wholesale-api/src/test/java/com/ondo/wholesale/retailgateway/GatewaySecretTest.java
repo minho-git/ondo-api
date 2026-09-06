@@ -15,6 +15,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -27,6 +28,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>여기서 잡고 싶은 사고는 둘이다. 하나는 <b>시크릿 없이도 열리는 것</b> —
  * 내부 ALB 를 붙이면 VPC 안에서 아무나 부를 수 있게 되므로 반드시 막혀야 한다.
  * 다른 하나는 <b>로컬이 깨지는 것</b> — 팀원들이 시크릿을 맞추지 않아도 돌아가야 한다.
+ *
+ * <p>접수 서비스는 가짜로 세운다(MUL-98). 여기서 보는 건 문 앞의 검사뿐이고,
+ * 주문이 실제로 들어가는지는 {@code RetailGatewayOrderApiTest} 가 본다.
  */
 class GatewaySecretTest {
 
@@ -49,6 +53,9 @@ class GatewaySecretTest {
 
         @Autowired
         private MockMvc mvc;
+
+        @MockitoBean
+        private RetailGatewayOrderService service;
 
         @Test
         @DisplayName("맞는 시크릿을 실으면 통과한다")
@@ -114,6 +121,9 @@ class GatewaySecretTest {
 
         @Autowired
         private MockMvc mvc;
+
+        @MockitoBean
+        private RetailGatewayOrderService service;
 
         @Test
         @DisplayName("헤더 없이도 통과한다 — 팀원이 시크릿을 안 맞춰도 로컬이 돌아간다")

@@ -90,6 +90,21 @@ public enum ErrorCode {
 
     // ── 회원 (MUL-70·71) ──
     // 심사 현황·재신청은 계약 스텁이 없어 선등록할 코드가 없다 — 구현이 이 자리에 채운다.
+
+    // ── 소매 접수 (MUL-98) ──
+    // 소매 백엔드가 POST /api/retail-gateway/orders 로 주문을 넣을 때 나온다.
+    // 400 은 요청이 애초에 틀린 것 — 남의 상품을 보냈다. 언제 보내도 실패한다.
+    // 409 는 소매가 본 화면과 지금 도매 상태가 어긋난 것 — 담아둔 사이 값이 바뀌었다.
+    // 이 구분이 중요한 건 소매 화면의 안내가 갈리기 때문이다. 400 은 다시 눌러도
+    // 소용없고, 409 는 "장바구니를 새로 고쳐주세요" 로 이어진다.
+    VARIANT_WHOLESALER_MISMATCH(HttpStatus.BAD_REQUEST, "이 도매처의 상품이 아닙니다."),
+    LISTING_NOT_ON_SALE(HttpStatus.CONFLICT, "판매 중인 상품이 아닙니다."),
+    PRICE_NOT_SET(HttpStatus.CONFLICT, "판매가가 등록되지 않은 옵션입니다."),
+    PRICE_CHANGED(HttpStatus.CONFLICT, "주문하려는 사이에 판매가가 바뀌었습니다."),
+    ORDER_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "1회 주문 가능 수량을 넘었습니다."),
+    // 멱등성 (D-052). UNIQUE(retail_order_id, wholesaler_id) 가 막는다 —
+    // 소매가 연타하거나 응답을 못 받고 재시도해도 주문이 둘 생기지 않는다.
+    ORDER_ALREADY_CREATED(HttpStatus.CONFLICT, "이미 접수된 주문입니다."),
     ;
 
     private final HttpStatus status;
