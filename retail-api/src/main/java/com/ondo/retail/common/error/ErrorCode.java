@@ -62,4 +62,28 @@ public enum ErrorCode {
     public String message() {
         return message;
     }
+
+    /**
+     * 상태 코드만 알 때 쓸 코드를 고른다 (MUL-106).
+     *
+     * <p>{@link JsonErrorReportValve} 가 쓴다. 톰캣이 스프링에 닿기 전에 거절한 요청은
+     * 우리가 던진 예외가 없어서 <b>상태 코드밖에 모른다.</b> 그때 우리 규약 모양으로
+     * 대답하려면 코드 하나를 골라야 한다.
+     *
+     * <p>세밀하게 나누지 않는다. 여기 오는 건 주소가 깨졌거나 톰캣이 스스로 낸
+     * 응답뿐이라, 화면이 분기할 만한 상황이 아니다. "요청이 잘못됐다" 와
+     * "우리 쪽 문제다" 만 가른다.
+     */
+    public static ErrorCode of(int httpStatus) {
+        if (httpStatus == HttpStatus.NOT_FOUND.value()) {
+            return RESOURCE_NOT_FOUND;
+        }
+        if (httpStatus == HttpStatus.UNAUTHORIZED.value()) {
+            return UNAUTHORIZED;
+        }
+        if (httpStatus == HttpStatus.FORBIDDEN.value()) {
+            return FORBIDDEN;
+        }
+        return httpStatus < 500 ? VALIDATION_FAILED : INTERNAL_ERROR;
+    }
 }
