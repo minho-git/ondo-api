@@ -55,10 +55,38 @@ jobs:
     name: 테스트
     if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+    # 소매 테스트는 진짜 포스트그레스에 붙는다.
+    #
+    # 기본 프로필이 local 이고(application.yml), application-local.yml 이
+    # localhost:5433 을 본다. 로컬에서는 db/compose.yml 로 띄운 DB 가 그 자리에
+    # 있어서 통과하는데, 러너에는 없으니 Flyway 가 연결에 실패하고 컨텍스트를
+    # 못 띄운다 — 96개 중 40개가 그렇게 깨졌다.
+    #
+    # db/compose.yml 의 retail-db 와 같은 값으로 맞춘다. 도매는 Testcontainers 라
+    # 자기가 띄우므로 이게 필요 없다.
+    #
+    # ⚠️ 테스트가 외부 DB 에 기대는 건 그대로다. 도매처럼 Testcontainers 로
+    #    바꾸면 여기도 compose 도 필요 없어지는데, 그건 이 티켓 범위 밖이다
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ondo_retail
+          POSTGRES_USER: ondo
+          POSTGRES_PASSWORD: ondo
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U ondo -d ondo_retail"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -77,7 +105,7 @@ jobs:
     outputs:
       tag: ${{ steps.tag.outputs.value }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # 커밋 앞 7자리를 통조림 이름표로 쓴다. latest 를 안 쓰는 이유가
       # 이거다 — 나중에 「지금 뭐가 떠 있나」를 이 값으로 알 수 있다

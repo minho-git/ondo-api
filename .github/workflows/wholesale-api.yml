@@ -56,9 +56,9 @@ jobs:
     if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -80,7 +80,7 @@ jobs:
     outputs:
       tag: ${{ steps.tag.outputs.value }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # 커밋 앞 7자리를 통조림 이름표로 쓴다. latest 를 안 쓰는 이유가
       # 이거다 — 나중에 「지금 뭐가 떠 있나」를 이 값으로 알 수 있다
