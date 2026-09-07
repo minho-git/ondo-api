@@ -51,3 +51,10 @@ output "alb_dns_name" {
   description = "ALB 기본 주소. DNS 전파 전에 확인할 때 쓴다"
   value       = aws_lb.external.dns_name
 }
+
+# ── MUL-105 · GitHub Actions ─────────────────────────────────
+
+output "github_deploy_role_arn" {
+  description = "GitHub Actions 가 맡을 역할. 저장소 변수 AWS_DEPLOY_ROLE_ARN 에 넣는다"
+  value       = aws_iam_role.github_deploy.arn
+}
