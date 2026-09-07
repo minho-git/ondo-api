@@ -2,10 +2,6 @@ package com.ondo.wholesale.backorder;
 
 import com.ondo.wholesale.backorder.dto.AllocationBatchResponse;
 import com.ondo.wholesale.backorder.dto.AllocationPackingResponse;
-import com.ondo.wholesale.backorder.dto.BackorderListResponse;
-import com.ondo.wholesale.backorder.dto.BackorderResponse;
-import com.ondo.wholesale.backorder.dto.BackorderSkuResponse;
-import com.ondo.wholesale.backorder.dto.BackorderStatsResponse;
 import com.ondo.wholesale.backorder.dto.ExpectedInboundResponse;
 import com.ondo.wholesale.order.PackingStatus;
 import com.ondo.wholesale.order.dto.response.PackingItemResponse;
@@ -22,25 +18,6 @@ final class BackorderStubExamples {
     private static final ZoneOffset KST = ZoneOffset.ofHours(9);
 
     private BackorderStubExamples() {
-    }
-
-    static List<BackorderSkuResponse> backorderSkus() {
-        return List.of(new BackorderSkuResponse(
-                90231L, 5012L, 18, 1, "오버핏 코튼 티셔츠", "블랙", Size.M, 90, 35, null));
-    }
-
-    static BackorderListResponse backordersOfSku() {
-        BackorderResponse row = new BackorderResponse(
-                6101L, 5601L, 1001, 88201L,
-                OffsetDateTime.of(2024, 7, 15, 9, 30, 0, 0, KST),
-                OffsetDateTime.of(2024, 7, 15, 14, 2, 0, 0, KST),
-                34, 3311L, "다올몰", 12, 12, 15000);
-        BackorderStatsResponse stats = new BackorderStatsResponse(
-                90231L, 18, 1, 90, 10, 10, 35, null, null,
-                OffsetDateTime.of(2024, 7, 15, 9, 30, 0, 0, KST),
-                OffsetDateTime.of(2024, 8, 5, 14, 35, 0, 0, KST),
-                1520000);
-        return new BackorderListResponse(List.of(row), stats);
     }
 
     static AllocationBatchResponse allocationBatch() {

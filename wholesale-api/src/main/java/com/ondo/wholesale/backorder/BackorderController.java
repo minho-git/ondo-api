@@ -7,9 +7,12 @@ import com.ondo.wholesale.backorder.dto.BackorderSkuResponse;
 import com.ondo.wholesale.backorder.dto.ExpectedInboundRequest;
 import com.ondo.wholesale.backorder.dto.ExpectedInboundResponse;
 import com.ondo.wholesale.common.response.ApiResponse;
+import com.ondo.wholesale.security.WholesalePrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,28 +26,32 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 미송 계약 스텁 (MUL-83) — 원본: api-lite/05_미송. example 응답만 반환하며
- * 실구현이 서비스 계층으로 교체한다. 인증·봉투는 실서버와 동일하게 동작한다.
+ * 미송 API (MUL-48) — 원본 계약: api-lite/05_미송.
+ *
+ * <p>배분·입고예정은 아직 계약 스텁(MUL-83)이다 — 실구현이 순서대로 교체한다.
  */
 @Tag(name = "05 미송")
 @RestController
 @RequestMapping("/api/wholesale")
+@RequiredArgsConstructor
 public class BackorderController {
 
-    @Operation(summary = "미송 SKU 목록 (아코디언 헤더)", description = """
-            미송이 남은 SKU 만 나온다 — 전부 해소된 SKU 는 빠진다. 기본 정렬 `backorderQty,desc`
-            (많이 밀린 SKU 먼저).
+    private final BackorderQueryService backorderQueryService;
 
-            에러: 400 `VALIDATION_FAILED` (`size > 100`)""")
+    @Operation(summary = "미송 SKU 목록 (아코디언 헤더)", description = """
+            미송이 남은 SKU 만 나온다 — 전부 해소된 SKU 는 빠진다. 기본 정렬
+            `latestBackorderedAt,desc`(가장 최근에 미송이 쌓인 SKU 먼저).
+            정렬 키는 `latestBackorderedAt`·`backorderQty` 둘이다.
+
+            에러: 400 `VALIDATION_FAILED` (`size > 100` / 모르는 정렬 키)""")
     @GetMapping("/backorders/variants")
     public ApiResponse<List<BackorderSkuResponse>> backorderSkus(
+            @AuthenticationPrincipal WholesalePrincipal principal,
             @RequestParam(required = false) String q,
             @RequestParam(required = false, defaultValue = "0") Integer page,
             @RequestParam(required = false, defaultValue = "20") Integer size,
             @RequestParam(required = false) String sort) {
-        return ApiResponse.paged(
-                BackorderStubExamples.backorderSkus(),
-                new ApiResponse.PageMeta(0, 20, 12, 1));
+        return backorderQueryService.skuList(principal.wholesalerId(), q, page, size, sort);
     }
 
     @Operation(summary = "SKU별 미송 목록 + 요약 (아코디언 펼침)", description = """
@@ -54,9 +61,10 @@ public class BackorderController {
 
             에러: 404 `RESOURCE_NOT_FOUND`""")
     @GetMapping("/variants/{variantId}/backorders")
-    public BackorderListResponse backordersOfSku(@PathVariable Long variantId,
+    public BackorderListResponse backordersOfSku(@AuthenticationPrincipal WholesalePrincipal principal,
+                                                 @PathVariable Long variantId,
                                                  @RequestParam(required = false) String sort) {
-        return BackorderStubExamples.backordersOfSku();
+        return backorderQueryService.backordersOfSku(principal.wholesalerId(), variantId, sort);
     }
 
     @Operation(summary = "미송 배분 (배분 확정)", description = """

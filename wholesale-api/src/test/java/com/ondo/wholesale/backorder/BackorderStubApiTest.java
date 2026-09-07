@@ -13,17 +13,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** 미송 계약 스텁 대표 응답 검증 (MUL-83). data+stats 봉투가 핵심이다. */
+/**
+ * 미송 계약 스텁 대표 응답 검증 (MUL-83). 조회 2종은 실구현(MUL-48)으로 교체돼
+ * 통합 테스트가 대신 본다 — 남은 스텁이 전부 교체되면 이 클래스는 없어진다.
+ */
 @WebMvcTest(BackorderController.class)
 @Import({SecurityConfig.class, RestAuthenticationEntryPoint.class, RestAccessDeniedHandler.class,
         ApprovedAuthorizationManager.class, ErrorResponseWriter.class, ApiResponseBodyAdvice.class,
@@ -33,23 +34,9 @@ class BackorderStubApiTest {
     @Autowired
     private MockMvc mvc;
 
-    @Test
-    void 미송SKU목록은_data배열과_페이징meta를_함께_내린다() throws Exception {
-        mvc.perform(get("/api/wholesale/backorders/variants").with(TestSecuritySupport.approved()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].backorderQty").value(90))
-                .andExpect(jsonPath("$.meta.totalElements").value(12));
-    }
-
-    @Test
-    void SKU별미송은_meta없이_data와_stats를_함께_내린다() throws Exception {
-        mvc.perform(get("/api/wholesale/variants/90231/backorders").with(TestSecuritySupport.approved()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.meta").doesNotExist())
-                .andExpect(jsonPath("$.data[0].remainingQty").value(12))
-                .andExpect(jsonPath("$.stats.backorderQty").value(90))
-                .andExpect(jsonPath("$.stats.backorderAmount").value(1520000));
-    }
+    /** 조회는 실구현(통합 테스트 범위) — 컨트롤러 생성에만 필요해 모킹한다. */
+    @MockitoBean
+    private BackorderQueryService backorderQueryService;
 
     @Test
     void 미송배분은_201로_주문별_카드와_해소된_미송id를_내린다() throws Exception {
