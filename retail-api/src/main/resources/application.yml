@@ -3,6 +3,19 @@ spring:
     name: retail-api
   profiles:
     default: local
+
+    # 배포 환경 둘이 공통 설정을 같이 쓰게 묶는다 (MUL-104).
+    #
+    #   SPRING_PROFILES_ACTIVE=dev   →  application-deploy.yml + application-dev.yml
+    #   SPRING_PROFILES_ACTIVE=prod  →  application-deploy.yml + application-prod.yml
+    #
+    # 공통을 이 파일(application.yml)에 못 두는 이유 — 여긴 로컬도 읽는다.
+    # ${DB_URL} 같은 걸 넣으면 로컬에서 그 환경변수가 없어 앱이 안 뜬다.
+    #
+    # ECS 는 dev 나 prod 하나만 주면 된다. deploy 는 여기서 따라붙는다.
+    group:
+      dev: deploy
+      prod: deploy
   flyway:
     default-schema: retail    # 이력 테이블(flyway_schema_history)이 여기 생긴다
 
@@ -75,7 +88,7 @@ management:
 # 반드시 준다. 안 주면 무한 대기라 도매가 느린 동안 소매 톰캣 스레드가 하나씩 잠기고,
 # 도매 장애가 소매 전체 장애로 번진다.
 #
-# 기본값은 로컬이다. 배포는 application-prod.yml 이 환경변수로 덮는다 (MUL-87).
+# 기본값은 로컬이다. 배포는 application-deploy.yml 이 환경변수로 덮는다 (MUL-87).
 ondo:
   wholesale:
     base-url: http://localhost:8081

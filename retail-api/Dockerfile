@@ -26,9 +26,15 @@ USER ondo
 
 COPY --from=build /app/build/libs/*.jar app.jar
 
-# 이 이미지는 배포용이다. 기본값이 local 이면 컨테이너 안의 localhost 를 봐서
-# DB 를 못 찾는다 — 배포 프로필을 여기서 박아 둔다.
-ENV SPRING_PROFILES_ACTIVE=prod
+# 프로필은 여기서 안 박는다 (MUL-104).
+#
+# 전에는 ENV SPRING_PROFILES_ACTIVE=prod 가 있었다. 그때는 배포 프로필이 하나뿐이라
+# 문제가 없었지만, 지금은 dev 와 prod 가 갈렸다. 이미지에 박아 두면 같은 이미지를
+# 두 환경에 못 쓰거나, 더 나쁘게는 개발 환경이 자기를 운영이라 부른다.
+#
+# 어느 환경인지는 태스크 정의(infra/ecs.tf)가 SPRING_PROFILES_ACTIVE 로 준다.
+# 안 주면 기본값 local 로 떠서 컨테이너 안 localhost 를 보다 기동에 실패한다 —
+# 조용히 잘못된 설정으로 도는 것보다 낫다.
 
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

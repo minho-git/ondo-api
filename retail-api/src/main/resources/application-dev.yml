@@ -1,0 +1,34 @@
+# 개발 환경 (MUL-104). api-dev.ddmondo.co.kr 이 이걸 읽는다.
+#
+# 배포 공통은 application-deploy.yml 에 있다. 프로필 그룹이 붙여주므로
+# ECS 는 SPRING_PROFILES_ACTIVE=dev 하나만 주면 된다.
+#
+# 여기 있는 건 전부 "개발 환경이라서 푼 것" 이다. 운영에 새면 안 되는 것들이라
+# 운영 파일과 갈랐다. 전에는 배포 파일이 하나뿐이라 이게 그대로 운영까지 갔다.
+spring:
+  flyway:
+    # 가짜 데이터를 같이 넣는다 (MUL-110). db/seed 는 db/migration 과 갈라 둔 폴더다.
+    #
+    # 기본값을 안 쓰고 여기 다시 적는 이유 — locations 는 통째로 덮어쓰는 값이라
+    # db/migration 을 같이 안 적으면 진짜 스키마가 안 들어간다.
+    #
+    # 전에는 이걸 ECS 환경변수(SPRING_FLYWAY_LOCATIONS)로 줬다. 그러면 운영 태스크에도
+    # 붙일 수 있어서, 시드 계정이 운영에 들어가는 걸 사람이 기억해서 막아야 한다.
+    # 파일로 옮기면 dev 프로필일 때만 읽히니 실수로 못 켠다 (MUL-103).
+    locations: classpath:db/migration,classpath:db/seed
+
+server:
+  servlet:
+    session:
+      cookie:
+        # ⚠️ 개발 환경 한정 개방 (MUL-110). 운영(application-prod.yml)은 lax 다.
+        #
+        # 창은이가 로컬 화면(localhost:3001)으로 이 배포 API 를 부르며 개발한다.
+        # lax 는 다른 사이트로 쿠키를 안 보낸다. localhost 와 api-dev.ddmondo.co.kr 은
+        # 브라우저 눈에 서로 남이라, CORS 를 열어줘도 로그인이 유지되지 않는다.
+        #
+        # 대가 — lax 가 공짜로 막아주던 CSRF 방어가 사라진다 (MUL-102).
+        # 개발 환경엔 가짜 데이터와 시드 계정뿐이라 실질 피해는 없다.
+        #
+        # none 은 secure 없이는 브라우저가 아예 거부한다. deploy 에서 켜 둬서 짝이 맞는다.
+        same-site: none
