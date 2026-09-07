@@ -27,8 +27,6 @@ import java.util.List;
 
 /**
  * 미송 API (MUL-48) — 원본 계약: api-lite/05_미송.
- *
- * <p>배분·입고예정은 아직 계약 스텁(MUL-83)이다 — 실구현이 순서대로 교체한다.
  */
 @Tag(name = "05 미송")
 @RestController
@@ -38,6 +36,7 @@ public class BackorderController {
 
     private final BackorderQueryService backorderQueryService;
     private final BackorderAllocationService backorderAllocationService;
+    private final ExpectedInboundService expectedInboundService;
 
     @Operation(summary = "미송 SKU 목록 (아코디언 헤더)", description = """
             미송이 남은 SKU 만 나온다 — 전부 해소된 SKU 는 빠진다. 기본 정렬
@@ -90,8 +89,10 @@ public class BackorderController {
 
             에러: 400 `VALIDATION_FAILED` / 404 `RESOURCE_NOT_FOUND`""")
     @PutMapping("/variants/{variantId}/expected-inbound")
-    public ExpectedInboundResponse registerExpectedInbound(@PathVariable Long variantId,
-                                                           @RequestBody ExpectedInboundRequest request) {
-        return BackorderStubExamples.expectedInbound();
+    public ExpectedInboundResponse registerExpectedInbound(
+            @AuthenticationPrincipal WholesalePrincipal principal,
+            @PathVariable Long variantId,
+            @RequestBody ExpectedInboundRequest request) {
+        return expectedInboundService.register(principal.wholesalerId(), variantId, request);
     }
 }
