@@ -27,13 +27,29 @@ variable "github_deploy_subjects" {
 
   # 이 저장소의 브랜치에서 도는 작업만 통과한다.
   #
-  # 남의 포크에서 올린 PR 은 여기 안 걸린다 — 그쪽 증명서는
-  # repo:남의계정/ondo-api 로 나온다.
+  # ⚠️ 이름 뒤의 @숫자를 빼면 안 된다. 우리 조직은 sub 에 불변 ID 가 붙어서 온다 —
+  #    실제로 받은 값이 이렇다.
   #
-  # dev 하나로 더 좁힐 수도 있다(ref:refs/heads/dev). 그러면 피처 브랜치에서
-  # 워크플로를 시험해 볼 수가 없어서 여기까지 뒀다. 비공개 저장소고 푸시할 수
-  # 있는 사람이 셋뿐이라 이 범위면 된다
-  default = ["repo:ondo-commerce/ondo-api:ref:refs/heads/*"]
+  #      repo:ondo-commerce@312365889/ondo-api@1321296842:ref:refs/heads/dev
+  #
+  #    처음에 ID 없이 걸었다가 「Not authorized to perform
+  #    sts:AssumeRoleWithWebIdentity」로 배포가 통째로 막혔다. STS 는 왜 안 맞는지
+  #    안 알려주므로, 토큰 클레임을 직접 찍어서 형식을 확인했다.
+  #
+  #    ID 를 쓰는 게 이름보다 안전하다. 조직·저장소 이름은 바꿀 수 있어서,
+  #    이름만 믿으면 누가 그 이름을 차지해 신뢰를 가로챌 수 있다. ID 는 안 바뀐다.
+  #
+  # 두 형식을 다 넣는다. GitHub 이 ID 를 안 붙이는 쪽으로 돌아가도 배포가 안 막힌다.
+  # 둘 다 조직·저장소를 정확히 지목하므로 넓어지는 게 아니다.
+  #
+  # 브랜치는 * 로 열어 뒀다. dev 하나로 더 좁힐 수 있지만 그러면 피처 브랜치에서
+  # 워크플로를 시험해 볼 수가 없다. 비공개 저장소고 푸시할 수 있는 사람이 셋뿐이다.
+  #
+  # 남의 포크에서 올린 PR 은 어느 쪽에도 안 걸린다 — 그쪽은 소유자가 다르다
+  default = [
+    "repo:ondo-commerce@312365889/ondo-api@1321296842:ref:refs/heads/*",
+    "repo:ondo-commerce/ondo-api:ref:refs/heads/*",
+  ]
 }
 
 data "aws_iam_policy_document" "github_assume" {
