@@ -133,8 +133,14 @@ resource "aws_ecs_task_definition" "retail" {
   container_definitions = jsonencode([{
     name = "retail"
 
-    # ⚠️ 아직 이 이미지가 ECR 에 없다. docker push 를 해야 태스크가 뜬다.
-    # 태스크 정의를 만드는 것 자체는 이미지가 없어도 된다
+    # ⚠️ 이 :latest 는 이제 자리표시자다 (MUL-105).
+    #
+    # 배포할 때마다 GitHub Actions 가 이 리비전을 복사해서 이미지만 커밋 해시로
+    # 바꿔 새 리비전을 등록한다. 실제로 도는 태스크는 그쪽이라 여기 적힌 값은
+    # 안 쓰인다 — 서비스가 task_definition 변경을 무시한다(service.tf).
+    #
+    # 그래도 이 줄을 지우면 안 된다. 태스크 정의에 image 는 필수고,
+    # CI 는 「이미 있는 리비전」을 복사하는 방식이라 원본이 있어야 한다
     image = "${aws_ecr_repository.retail.repository_url}:latest"
 
     essential = true
@@ -203,7 +209,9 @@ resource "aws_ecs_task_definition" "wholesale" {
   task_role_arn      = aws_iam_role.task_wholesale.arn
 
   container_definitions = jsonencode([{
-    name      = "wholesale"
+    name = "wholesale"
+
+    # 소매와 같다 — :latest 는 자리표시자고 실제 태그는 CI 가 정한다 (MUL-105)
     image     = "${aws_ecr_repository.wholesale.repository_url}:latest"
     essential = true
     portMappings = [{
