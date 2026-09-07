@@ -31,8 +31,9 @@ import java.util.List;
  * <p>partnerId·wholesalerId 는 연관 없이 Long 으로만 든다 — 스코핑·조회가 전부 id 비교다.
  * 미송({@link Backorder})·포장({@link Packing})은 이 애그리거트 밖이라 매핑하지 않는다.
  *
- * <p>retail_order_id·agent_name·agent_phone 컬럼은 매핑하지 않는다 — 주문 생성(소매 접수)과
- * 장끼(출고) 쪽 값이라 그 작업이 쓰기 시작할 때 추가한다.
+ * <p>retail_order_id·agent_name·agent_phone 은 소매 접수(MUL-98)가 쓰기 시작하면서 더했다.
+ * 도매 화면에서 직접 넣은 주문은 셋 다 null 이다 — 소매를 안 거쳤으니 소매 주문서가 없고,
+ * 수령인도 그때 정하지 않는다.
  */
 @Entity
 @Table(name = "orders", schema = "wholesale")
@@ -53,6 +54,22 @@ public class Order {
 
     @Column(name = "wholesaler_id", nullable = false, updatable = false)
     private Long wholesalerId;
+
+    /**
+     * 소매 통합 주문서 id. 논리 참조(FK 없음, D-051) — DB 가 갈라져 있다.
+     *
+     * <p>도매 화면에서 직접 넣은 주문은 null 이다. 멱등성도 이 값으로 잡는다 —
+     * UNIQUE(retail_order_id, wholesaler_id) 라 같은 주문서를 두 번 접수하면 걸린다.
+     */
+    @Column(name = "retail_order_id", updatable = false)
+    private Long retailOrderId;
+
+    /** 사입삼촌. 장끼에 수령인으로 찍힌다. 직접 수령이면 null (U-11). */
+    @Column(name = "agent_name", length = 50)
+    private String agentName;
+
+    @Column(name = "agent_phone", length = 20)
+    private String agentPhone;
 
     /** 저장 상태 3값. 출고 진행도는 파생이라 여기 없다. */
     @Enumerated(EnumType.STRING)
@@ -87,13 +104,17 @@ public class Order {
     private List<OrderItem> items = new ArrayList<>();
 
     @Builder
-    private Order(int orderNumber, Long partnerId, Long wholesalerId,
-                  PaymentMethod paymentTerm, ReceiveBy receiveMethod, OffsetDateTime orderedAt) {
+    private Order(int orderNumber, Long partnerId, Long wholesalerId, Long retailOrderId,
+                  PaymentMethod paymentTerm, ReceiveBy receiveMethod,
+                  String agentName, String agentPhone, OffsetDateTime orderedAt) {
         this.orderNumber = orderNumber;
         this.partnerId = partnerId;
         this.wholesalerId = wholesalerId;
+        this.retailOrderId = retailOrderId;
         this.paymentTerm = paymentTerm;
         this.receiveMethod = receiveMethod;
+        this.agentName = agentName;
+        this.agentPhone = agentPhone;
         this.orderedAt = orderedAt;
     }
 
