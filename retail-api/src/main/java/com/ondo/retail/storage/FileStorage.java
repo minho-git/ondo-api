@@ -12,7 +12,9 @@ public interface FileStorage {
 
     /**
      * @param directory 논리적 묶음. 예: {@code retailer/12}
+     * @param type      파일 앞머리로 확인한 <b>진짜</b> 형식 (MUL-99).
+     *                  확장자를 여기서 정한다 — 사용자가 준 이름을 안 믿는다
      * @return 나중에 파일을 찾을 때 쓰는 경로. retailer_doc.file_url 에 그대로 들어간다
      */
-    String store(MultipartFile file, String directory);
+    String store(MultipartFile file, String directory, FileType type);
 }

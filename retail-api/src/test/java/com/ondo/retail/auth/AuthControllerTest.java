@@ -148,8 +148,10 @@ class AuthControllerTest {
                 {"email":"mvc-signup@ondo.test","password":"ondo1234!","shopName":"새싹상회",
                  "ownerName":"박새싹","mobile":"01011112222","bizRegNo":"1112223333",
                  "agreedTerms":["SERVICE","PRIVACY"]}""".getBytes());
+        // PNG 앞머리 여덟 바이트. 파일 내용으로 형식을 보므로 진짜여야 통과한다 (MUL-99)
         MockMultipartFile 등록증 = new MockMultipartFile("bizLicense", "biz.png",
-                MediaType.IMAGE_PNG_VALUE, new byte[] {(byte) 0x89, 'P', 'N', 'G'});
+                MediaType.IMAGE_PNG_VALUE,
+                new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A});
 
         MvcResult result = mvc.perform(multipart("/api/retail/auth/sign-up").file(payload).file(등록증))
                 .andExpect(status().isCreated())

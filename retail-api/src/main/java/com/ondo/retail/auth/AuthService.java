@@ -15,6 +15,7 @@ import com.ondo.retail.retailer.domain.RetailerPrivate;
 import com.ondo.retail.retailer.domain.TermsAgreement;
 import com.ondo.retail.retailer.domain.TermsType;
 import com.ondo.retail.storage.FileStorage;
+import com.ondo.retail.storage.FileType;
 import java.util.List;
 import java.util.Set;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,9 +34,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class AuthService {
 
-    /** 사업자등록증으로 받을 수 있는 형식. 명세에 jpg · png · pdf 로 적혀 있다. */
-    private static final Set<String> ALLOWED_CONTENT_TYPES =
-            Set.of("image/jpeg", "image/png", "application/pdf");
+    /**
+     * 사업자등록증으로 받을 수 있는 형식. 명세에 jpg · png · pdf 로 적혀 있다.
+     *
+     * <p>목록이 {@link FileType} 과 같다 — 거기 있는 셋이 전부 허용이다. 나중에 형식을
+     * 늘리면 {@code FileType} 에만 더하면 된다.
+     */
 
     /** 명세상 10MB. 스프링 기본값(1MB)과 달라서 application.yml 도 같이 올려뒀다. */
     private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
@@ -58,7 +62,7 @@ public class AuthService {
      */
     @Transactional
     public SignUpResponse signUp(SignUpRequest request, MultipartFile bizLicense) {
-        validate(bizLicense);
+        FileType fileType = validate(bizLicense);
 
         if (retailerRepository.existsByEmailIgnoreCase(request.email())) {
             throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
@@ -78,23 +82,37 @@ public class AuthService {
                 .toList();
         termsAgreementRepository.saveAll(agreements);
 
-        String fileUrl = fileStorage.store(bizLicense, "retailer/" + retailer.getId());
+        String fileUrl = fileStorage.store(bizLicense, "retailer/" + retailer.getId(), fileType);
         retailerDocRepository.save(RetailerDoc.bizLicense(retailer.getId(), fileUrl));
 
         log.info("가입 신청. retailerId={} shopName={}", retailer.getId(), retailer.getShopName());
         return SignUpResponse.from(retailer);
     }
 
-    private void validate(MultipartFile file) {
+    /**
+     * 올라온 파일을 검사한다 (MUL-99).
+     *
+     * <p><b>{@code Content-Type} 을 안 믿는다.</b> 그건 브라우저가 보내는 값이라 조작된다 —
+     * 실행 파일에 {@code image/jpeg} 를 붙이면 그대로 통과했다(숙제 10번).
+     *
+     * <p>대신 <b>파일 앞머리</b>를 읽어 진짜 형식을 본다. 이름을 바꾸든 헤더를 고치든
+     * 그 값은 안 바뀐다.
+     *
+     * <p>크기를 먼저 보는 건 큰 파일을 열어보기 전에 끊으려는 것이다.
+     */
+    private FileType validate(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED);
         }
         if (file.getSize() > MAX_FILE_SIZE) {
             throw new BusinessException(ErrorCode.FILE_TOO_LARGE);
         }
-        if (!ALLOWED_CONTENT_TYPES.contains(file.getContentType())) {
-            throw new BusinessException(ErrorCode.UNSUPPORTED_FILE_TYPE);
-        }
+        return FileType.of(file)
+                .orElseThrow(() -> {
+                    log.info("허용하지 않는 파일이다. 보낸 형식={} 이름={}",
+                            file.getContentType(), file.getOriginalFilename());
+                    return new BusinessException(ErrorCode.UNSUPPORTED_FILE_TYPE);
+                });
     }
 
     /**
