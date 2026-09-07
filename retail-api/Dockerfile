@@ -4,7 +4,19 @@
 # 실제로 돌아가는 이미지에는 JRE 와 jar 만 남는다. 이미지가 작고, 소스가 안 실린다.
 
 # ── 1단계 · 빌드 ────────────────────────────────────────────
-FROM eclipse-temurin:21-jdk AS build
+#
+# --platform=$BUILDPLATFORM 은 「이 단계는 빌드하는 기계의 아키텍처로 돌려라」다 (MUL-105).
+#
+# 최종 이미지는 ARM64 여야 한다 — 태스크 정의가 ARM 이라 x86 이미지는 안 뜬다
+# (ecs.tf). 그런데 GitHub 러너는 x86 이다. 이 줄이 없으면 그래들 빌드 전체가
+# ARM 에뮬레이션으로 돌아서 몇 배 느려진다.
+#
+# jar 는 바이트코드라 어느 아키텍처에서 만들든 결과가 같다. 그래서 빌드는 러너
+# 네이티브로 하고, 아키텍처가 실제로 중요한 2단계(JRE)만 ARM 으로 둔다.
+# 에뮬레이션이 필요한 건 아래 useradd 한 줄뿐이다.
+#
+# 맥(M시리즈)에서 docker build 하면 BUILDPLATFORM 이 arm64 라 지금까지와 똑같다
+FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 
 # 빌드 스크립트를 먼저 넣고 의존성만 받아둔다.

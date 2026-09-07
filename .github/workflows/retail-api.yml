@@ -1,0 +1,207 @@
+# 소매 API — 테스트 · 빌드 · 배포 (MUL-105)
+#
+# PR 이면 테스트만 돌고, dev 에 머지되면 배포까지 간다.
+#
+# 저장소가 하나라 paths 로 소매 폴더만 건다. 안 그러면 소매만 고쳐도
+# 도매가 같이 배포된다 (인프라.md 「배포」).
+
+name: 소매 API
+
+on:
+  pull_request:
+    branches: [dev]
+    paths:
+      - 'retail-api/**'
+      - '.github/workflows/retail-api.yml'
+
+  push:
+    branches: [dev]
+    paths:
+      - 'retail-api/**'
+      - '.github/workflows/retail-api.yml'
+
+  # 되돌리기 버튼. 빌드를 건너뛰고 이미 창고에 있는 통조림으로 배포한다.
+  # Actions 탭 → 이 워크플로 → Run workflow
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '되돌릴 ECR 태그 (커밋 앞 7자리). 예 - cbf746d'
+        required: true
+
+# ⚠️ id-token 이 없으면 AWS 로그인이 막힌다. OIDC 증명서를 받는 권한이다
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ap-northeast-2
+
+  # 아래 넷은 infra/ 가 만든 이름이다. local.prefix = "ondo-dev" (network.tf)
+  ECR_REPOSITORY: ondo-dev-retail
+  ECS_CLUSTER: ondo-dev
+  ECS_SERVICE: ondo-dev-retail
+  ECS_TASK_FAMILY: ondo-dev-retail
+
+  # ⚠️ ecs.tf 의 container_definitions[0].name 과 같아야 한다.
+  # 다르면 「그런 컨테이너 없다」며 배포가 실패한다
+  CONTAINER_NAME: retail
+
+jobs:
+  # ── 테스트 ──────────────────────────────────────────────────
+  #
+  # 되돌리기(workflow_dispatch)일 땐 안 돈다. 이미 통과했던 코드로
+  # 돌아가는 것이라 다시 잴 이유가 없고, 급할 때 기다리면 안 된다
+  test:
+    name: 테스트
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    # 소매 테스트는 진짜 포스트그레스에 붙는다.
+    #
+    # 기본 프로필이 local 이고(application.yml), application-local.yml 이
+    # localhost:5433 을 본다. 로컬에서는 db/compose.yml 로 띄운 DB 가 그 자리에
+    # 있어서 통과하는데, 러너에는 없으니 Flyway 가 연결에 실패하고 컨텍스트를
+    # 못 띄운다 — 96개 중 40개가 그렇게 깨졌다.
+    #
+    # db/compose.yml 의 retail-db 와 같은 값으로 맞춘다. 도매는 Testcontainers 라
+    # 자기가 띄우므로 이게 필요 없다.
+    #
+    # ⚠️ 테스트가 외부 DB 에 기대는 건 그대로다. 도매처럼 Testcontainers 로
+    #    바꾸면 여기도 compose 도 필요 없어지는데, 그건 이 티켓 범위 밖이다
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ondo_retail
+          POSTGRES_USER: ondo
+          POSTGRES_PASSWORD: ondo
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U ondo -d ondo_retail"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: 테스트
+        working-directory: retail-api
+        run: ./gradlew test --no-daemon
+
+  # ── 빌드 · 푸시 ─────────────────────────────────────────────
+  build:
+    name: 빌드 · 푸시
+    if: github.event_name == 'push'
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.value }}
+    steps:
+      - uses: actions/checkout@v5
+
+      # 커밋 앞 7자리를 통조림 이름표로 쓴다. latest 를 안 쓰는 이유가
+      # 이거다 — 나중에 「지금 뭐가 떠 있나」를 이 값으로 알 수 있다
+      - name: 태그 정하기
+        id: tag
+        run: echo "value=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ⚠️ 태스크 정의가 ARM64 다 (ecs.tf). x86 이미지는 그 태스크에서 안 뜬다.
+      #
+      # 러너는 x86 이지만 Dockerfile 의 빌드 단계가 --platform=$BUILDPLATFORM 이라
+      # 그래들은 러너 네이티브로 돈다. 에뮬레이션이 필요한 건 실행 단계의
+      # useradd 한 줄뿐이라 몇 초면 끝난다.
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: retail-api
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.value }}
+
+          # 그래들 의존성 층을 다음 실행에 물려준다. 없으면 매번 다시 받는다
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── 배포 ────────────────────────────────────────────────────
+  #
+  # 조건이 길어 보이지만 하는 말은 하나다 — 「PR 이 아니고, 앞 단계가 깨지지 않았으면」.
+  # 되돌리기일 땐 test · build 가 통째로 건너뛰어지는데, 그걸 실패로 안 치려고
+  # result != 'failure' 로 본다 (skipped 는 통과)
+  deploy:
+    name: 배포
+    needs: [test, build]
+    if: >-
+      ${{ !cancelled()
+          && github.event_name != 'pull_request'
+          && needs.test.result != 'failure'
+          && needs.build.result != 'failure' }}
+    runs-on: ubuntu-latest
+    env:
+      # 되돌리기면 사람이 넣은 값, 평소면 방금 빌드한 것
+      TAG: ${{ inputs.version || needs.build.outputs.tag }}
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 지금 지시서를 통째로 받아온다. CPU · 환경변수 · 시크릿이 다 여기 있고
+      # 우리는 이미지 한 줄만 바꾼다 — 나머지는 터라폼이 정한 값 그대로 간다.
+      #
+      # del(...) 은 조회할 때만 붙는 필드를 떼는 것이다. 그대로 다시 등록하려
+      # 들면 AWS 가 「모르는 필드」라며 거절한다
+      - name: 지금 지시서 받아오기
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "$ECS_TASK_FAMILY" \
+            --query taskDefinition --output json \
+            | jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes,
+                      .compatibilities, .registeredAt, .registeredBy)' \
+            > task-definition.json
+
+      - name: 이미지 한 줄 갈아끼우기
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.TAG }}
+
+      # 새 리비전으로 등록하고 서비스를 거기로 옮긴다.
+      # wait-for-service-stability 는 새 태스크가 헬스체크를 통과할 때까지 기다린다 —
+      # 초록불인데 실은 안 떠 있는 상황을 막는다
+      - name: 새 지시서로 등록하고 배포
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: 요약
+        run: |
+          echo "### 소매 배포 완료" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- 이미지 \`$ECR_REPOSITORY:$TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- https://api-dev.ddmondo.co.kr" >> "$GITHUB_STEP_SUMMARY"

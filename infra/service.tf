@@ -49,6 +49,22 @@ resource "aws_ecs_service" "retail" {
   # 리스너 규칙이 먼저 있어야 타깃그룹이 ALB 에 실제로 물린다
   depends_on = [aws_lb_listener_rule.retail]
 
+  # 이미지는 이제 CI 담당이다 (MUL-105).
+  #
+  # 배포할 때마다 GitHub Actions 가 지시서를 새로 등록하고(8 · 9 · 10 …)
+  # 서비스를 거기로 옮긴다. 터라폼은 그걸 모르니, 이 줄이 없으면 다음 apply 때
+  # 「내가 만든 7번이랑 다르네」 하고 되돌려버린다 — 배포가 조용히 롤백된다.
+  #
+  # 터라폼은 CPU · 환경변수 · 시크릿을 계속 정한다. 그 값은 태스크 정의 리소스에
+  # 그대로 남고, CI 는 최신 리비전을 복사해 이미지 한 줄만 갈아끼운다.
+  #
+  # ⚠️ 그래서 ecs.tf 를 고치고 apply 해도 그 자리에서는 안 뜬다. 새 리비전을
+  #    만들어 두기만 한다. 다음 배포 때 반영되고, 바로 반영하려면 Actions 에서
+  #    배포를 한 번 돌린다
+  lifecycle {
+    ignore_changes = [task_definition]
+  }
+
   tags = { Name = "${local.prefix}-retail" }
 }
 
@@ -87,6 +103,22 @@ resource "aws_ecs_service" "wholesale" {
   }
 
   depends_on = [aws_lb_listener_rule.wholesale, aws_lb_listener_rule.internal_retail_gateway]
+
+  # 이미지는 이제 CI 담당이다 (MUL-105).
+  #
+  # 배포할 때마다 GitHub Actions 가 지시서를 새로 등록하고(8 · 9 · 10 …)
+  # 서비스를 거기로 옮긴다. 터라폼은 그걸 모르니, 이 줄이 없으면 다음 apply 때
+  # 「내가 만든 7번이랑 다르네」 하고 되돌려버린다 — 배포가 조용히 롤백된다.
+  #
+  # 터라폼은 CPU · 환경변수 · 시크릿을 계속 정한다. 그 값은 태스크 정의 리소스에
+  # 그대로 남고, CI 는 최신 리비전을 복사해 이미지 한 줄만 갈아끼운다.
+  #
+  # ⚠️ 그래서 ecs.tf 를 고치고 apply 해도 그 자리에서는 안 뜬다. 새 리비전을
+  #    만들어 두기만 한다. 다음 배포 때 반영되고, 바로 반영하려면 Actions 에서
+  #    배포를 한 번 돌린다
+  lifecycle {
+    ignore_changes = [task_definition]
+  }
 
   tags = { Name = "${local.prefix}-wholesale" }
 }
