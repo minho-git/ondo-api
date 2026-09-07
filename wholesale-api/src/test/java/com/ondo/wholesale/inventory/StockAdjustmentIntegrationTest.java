@@ -4,6 +4,7 @@ import com.ondo.wholesale.security.support.TestSecuritySupport;
 import com.ondo.wholesale.support.InventoryFixture;
 import com.ondo.wholesale.support.MasterDataFixture;
 import com.ondo.wholesale.support.OrderFixture;
+import com.ondo.wholesale.support.OutboundFixture;
 import com.ondo.wholesale.support.PostgresTestSupport;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -112,10 +113,8 @@ class StockAdjustmentIntegrationTest extends PostgresTestSupport {
         long 대기포장 = OrderFixture.포장을_넣는다(jdbc, orderId, "READY");
         OrderFixture.포장항목을_넣는다(jdbc, 대기포장, 라인, null, batchId, 5, false);
 
-        long outboundId = jdbc.queryForObject("""
-                insert into wholesale.outbound (wholesaler_id, partner_id, outbound_number)
-                values (?, ?, 'PKG-001') returning id
-                """, Long.class, wholesalerId, partnerId);
+        // V8(MUL-49)이 outbound_number 를 int 로 바꿔 출고 픽스처를 공용으로 쓴다
+        long outboundId = OutboundFixture.출고를_넣는다(jdbc, wholesalerId, partnerId, 1);
         long 출고포장 = OrderFixture.포장을_넣는다(jdbc, orderId, "PACKED");
         jdbc.update("update wholesale.packing set outbound_id = ? where id = ?", outboundId, 출고포장);
         OrderFixture.포장항목을_넣는다(jdbc, 출고포장, 라인, null, batchId, 3, false);
