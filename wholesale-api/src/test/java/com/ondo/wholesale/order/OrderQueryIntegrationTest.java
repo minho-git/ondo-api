@@ -188,6 +188,22 @@ class OrderQueryIntegrationTest extends PostgresTestSupport {
     }
 
     @Test
+    void 상세는_2XL_라벨_사이즈도_그대로_내린다() throws Exception {
+        // DB 는 '2XL' 라벨로 저장한다 (SizeConverter) — enum 상수명(X2L)으로 읽으면 깨진다
+        long leaf2 = MasterDataFixture.카테고리_리프를_넣는다(jdbc, 9165);
+        long color2 = MasterDataFixture.색상을_넣는다(jdbc, 9265, 9266);
+        long 패딩 = OrderFixture.상품_변형을_넣는다(jdbc, wholesalerId, leaf2, color2, "패딩", 3);
+        jdbc.update("update wholesale.variant set size = '2XL' where id = ?", 패딩);
+        long 확정 = 주문(1, "CONFIRMED", 시각(10, 0));
+        OrderFixture.라인을_넣는다(jdbc, 확정, 패딩, 2, 1000, 0, 0);
+
+        mvc.perform(get("/api/wholesale/orders/" + 확정)
+                        .with(TestSecuritySupport.approvedAs(wholesalerId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].size").value("2XL"));
+    }
+
+    @Test
     void 남의_주문_상세는_404다() throws Exception {
         long 남 = MasterDataFixture.도매처를_넣는다(jdbc, "other-query@ondo.test", "9500000007");
         long 남거래처 = OrderFixture.거래처를_넣는다(jdbc, 남, 702L, "남의상회");
