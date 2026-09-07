@@ -10,13 +10,34 @@
 # 브라우저에서 API 를 부를 화면 주소. 서버마다 다르다 —
 # 소매 API 는 소매 화면만, 도매 API 는 도매 POS 만 받는다.
 # 여러 개면 쉼표로 잇는다.
+# 어느 환경으로 뜰지 (MUL-104).
+#
+# 스프링이 이 값으로 읽을 설정 파일을 고른다 —
+#   dev   application-deploy.yml + application-dev.yml   시드 · 쿠키 개방
+#   prod  application-deploy.yml + application-prod.yml  둘 다 없음
+#
+# 전에는 이미지(Dockerfile)에 prod 가 박혀 있었다. 배포 프로필이 하나뿐이라
+# 그래도 됐지만, 지금 이 환경은 실제로 개발 환경이다. 이름을 사실대로 붙인다.
+#
+# 운영을 띄울 때는 이 값을 prod 로 준다. 그것만으로 시드와 쿠키 개방이 같이 꺼진다.
+variable "spring_profile" {
+  description = "ECS 태스크가 쓸 스프링 프로필 (dev | prod)"
+  type        = string
+  default     = "dev"
+
+  validation {
+    condition     = contains(["dev", "prod"], var.spring_profile)
+    error_message = "dev 나 prod 만 된다. local 은 로컬 전용이라 배포에 쓰면 컨테이너 안 localhost 를 본다."
+  }
+}
+
 variable "retail_cors_origins" {
   description = "소매 API 를 부를 화면"
   type        = string
 
   # localhost:3001 은 ⚠️ 임시 개방 (MUL-110). 운영 띄우기 전에 뺀다 — MUL-103.
   # 창은이가 로컬 화면으로 이 배포 API 를 부르며 개발한다. 쿠키도 같이 풀었다
-  # (application-prod.yml 의 same-site: none). 둘 중 하나만 있으면 로그인이 안 된다.
+  # (application-dev.yml 의 same-site: none). 둘 중 하나만 있으면 로그인이 안 된다.
   default = "https://ddmondo.co.kr,http://localhost:3001"
 }
 
@@ -120,23 +141,15 @@ resource "aws_ecs_task_definition" "retail" {
     }]
 
     environment = [
-      { name = "SPRING_PROFILES_ACTIVE", value = "prod" },
+      { name = "SPRING_PROFILES_ACTIVE", value = var.spring_profile },
       { name = "DB_URL", value = "jdbc:postgresql://${aws_db_instance.retail.endpoint}/ondo_retail" },
       { name = "DB_USERNAME", value = "ondo" },
       { name = "CORS_ALLOWED_ORIGINS", value = var.retail_cors_origins },
 
-      # ⚠️ 개발 환경 시드 (MUL-110). 운영 띄우기 전에 이 줄을 지운다 — MUL-103.
+      # 개발 환경 시드(MUL-110)는 여기 없다. application-dev.yml 로 옮겼다 (MUL-104).
       #
-      # 시드를 db/migration 이 아니라 db/seed 에 뒀다. 마이그레이션 폴더에 두면
-      # Testcontainers 가 테스트에서도 다 돌려서 도매 테스트 40개가 깨진다 —
-      # 시드가 넣은 도매처와 테스트가 넣는 도매처의 이메일이 부딪힌다.
-      #
-      # 그래서 기본 위치는 그대로 두고, 배포에서만 폴더를 하나 더 읽게 한다.
-      # 나중에 끄는 것도 이 줄을 지우면 끝이다. 앱 코드는 안 건드린다.
-      #
-      # 운영 DB 는 처음부터 이 줄 없이 뜨므로 V900 이 적용된 적이 없고,
-      # 그래서 Flyway 가 "적용됐는데 파일이 없다" 로 막지 않는다.
-      { name = "SPRING_FLYWAY_LOCATIONS", value = "classpath:db/migration,classpath:db/seed" },
+      # 환경변수로 주면 운영 태스크에도 붙일 수 있어서, 시드 계정이 운영에 안 들어가는 걸
+      # 사람이 기억해서 막아야 한다. 프로필 파일에 두면 dev 일 때만 읽히니 실수로 못 켠다.
       # 도매를 부르는 주소 (MUL-87). 내부 ALB 다
       { name = "WHOLESALE_BASE_URL", value = local.wholesale_base_url },
     ]
@@ -191,25 +204,17 @@ resource "aws_ecs_task_definition" "wholesale" {
     }]
 
     environment = [
-      { name = "SPRING_PROFILES_ACTIVE", value = "prod" },
+      { name = "SPRING_PROFILES_ACTIVE", value = var.spring_profile },
       { name = "DB_URL", value = "jdbc:postgresql://${aws_db_instance.wholesale.endpoint}/ondo_wholesale" },
       { name = "DB_USERNAME", value = "ondo" },
-      # ⚠️ 도매는 application-prod.yml 에 CORS 설정이 아직 없다(MUL-86 이 local 에만 넣었다).
+      # ⚠️ 도매는 배포 설정에 CORS 가 아직 없다(MUL-86 이 local 에만 넣었다).
       # 채빈이 환경변수를 받게 고치기 전까지 이 값은 무시된다
       { name = "CORS_ALLOWED_ORIGINS", value = var.wholesale_cors_origins },
 
-      # ⚠️ 개발 환경 시드 (MUL-110). 운영 띄우기 전에 이 줄을 지운다 — MUL-103.
+      # 개발 환경 시드(MUL-110)는 여기 없다. application-dev.yml 로 옮겼다 (MUL-104).
       #
-      # 시드를 db/migration 이 아니라 db/seed 에 뒀다. 마이그레이션 폴더에 두면
-      # Testcontainers 가 테스트에서도 다 돌려서 도매 테스트 40개가 깨진다 —
-      # 시드가 넣은 도매처와 테스트가 넣는 도매처의 이메일이 부딪힌다.
-      #
-      # 그래서 기본 위치는 그대로 두고, 배포에서만 폴더를 하나 더 읽게 한다.
-      # 나중에 끄는 것도 이 줄을 지우면 끝이다. 앱 코드는 안 건드린다.
-      #
-      # 운영 DB 는 처음부터 이 줄 없이 뜨므로 V900 이 적용된 적이 없고,
-      # 그래서 Flyway 가 "적용됐는데 파일이 없다" 로 막지 않는다.
-      { name = "SPRING_FLYWAY_LOCATIONS", value = "classpath:db/migration,classpath:db/seed" },
+      # 환경변수로 주면 운영 태스크에도 붙일 수 있어서, 시드 계정이 운영에 안 들어가는 걸
+      # 사람이 기억해서 막아야 한다. 프로필 파일에 두면 dev 일 때만 읽히니 실수로 못 켠다.
     ]
 
     secrets = [

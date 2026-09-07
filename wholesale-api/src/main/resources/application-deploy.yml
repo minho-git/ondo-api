@@ -1,0 +1,39 @@
+# 배포 공통 (MUL-104).
+#
+# dev · prod 둘 다 읽는다. 두 파일에 같은 줄을 두 벌 두지 않으려고 뺐다.
+#
+# 이 파일은 직접 켜지 않는다. application.yml 의 프로필 그룹이 dev · prod 에
+# 붙여준다 — ECS 는 SPRING_PROFILES_ACTIVE 에 dev 나 prod 하나만 주면 된다.
+#
+# 로컬은 안 읽는다. 여기 있는 건 전부 환경변수를 요구하는 값이라
+# 로컬에서 읽히면 앱이 안 뜬다. 그래서 application.yml 에 못 둔다.
+#
+# 비밀은 이 파일에 적지 않는다. ECS 태스크가 뜰 때 Secrets Manager 에서 받아
+# 환경변수로 넣어주고, 스프링이 ${} 자리에 끼운다. 이미지에도 코드에도 값이 없다.
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+server:
+  # ALB 가 앞에 있다. 앱이 보는 요청은 ALB 가 내부로 전달한 것이라 주소가 다르다 —
+  # 그대로 두면 스프링이 자기를 http://10.0.x.x:8081 인 줄 안다. 그러면 문서의
+  # servers 에 그 내부 주소가 박혀서, 스칼라의 테스트 버튼이 닿지 않는 곳을 부른다.
+  #
+  # ALB 가 X-Forwarded-Proto · X-Forwarded-Host 를 붙여준다. 이 설정이 그걸 읽게 한다.
+  # 값을 믿어도 되는 건 ALB 가 클라이언트가 보낸 것을 덮어쓰기 때문이다. (MUL-110)
+  forward-headers-strategy: framework
+
+  servlet:
+    session:
+      cookie:
+        secure: true   # 배포는 https 다. 이걸 안 켜면 쿠키가 http 로도 나간다
+
+# 소매 접점 시크릿 (MUL-87).
+#
+# 끝에 `:` 를 안 붙인다. 없으면 소매 접점이 누구에게나 열리기 때문이다.
+# 그럴 바에는 기동을 실패시키는 게 낫다 — ECS 배포 회로차단기가 이전 태스크로 되돌린다.
+ondo:
+  gateway:
+    secret: ${ONDO_GATEWAY_SECRET}

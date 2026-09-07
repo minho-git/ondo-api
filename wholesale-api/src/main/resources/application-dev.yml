@@ -1,0 +1,14 @@
+# 개발 환경 (MUL-104). api-dev.ddmondo.co.kr 이 이걸 읽는다.
+#
+# 배포 공통은 application-deploy.yml 에 있다. 여기엔 "개발 환경이라서 푼 것" 만 둔다.
+spring:
+  flyway:
+    # 가짜 데이터를 같이 넣는다 (MUL-110). db/seed 는 db/migration 과 갈라 둔 폴더다.
+    #
+    # 기본값을 안 쓰고 여기 다시 적는 이유 — locations 는 통째로 덮어쓰는 값이라
+    # db/migration 을 같이 안 적으면 진짜 스키마가 안 들어간다.
+    #
+    # 전에는 이걸 ECS 환경변수(SPRING_FLYWAY_LOCATIONS)로 줬다. 그러면 운영 태스크에도
+    # 붙일 수 있어서, 시드 계정이 운영에 들어가는 걸 사람이 기억해서 막아야 한다.
+    # 파일로 옮기면 dev 프로필일 때만 읽히니 실수로 못 켠다 (MUL-103).
+    locations: classpath:db/migration,classpath:db/seed
