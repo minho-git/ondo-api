@@ -32,8 +32,9 @@ public class PackingItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** 포장 분할(MUL-49)이 재부모화하는 유일한 가변 참조 — {@link #moveTo}로만 바뀐다. */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "packing_id", nullable = false, updatable = false)
+    @JoinColumn(name = "packing_id", nullable = false)
     private Packing packing;
 
     @Column(name = "order_item_id", nullable = false, updatable = false)
@@ -61,6 +62,11 @@ public class PackingItem {
     /** 배분취소 — 행은 남기고 deleted_at 만 찍는다. */
     public void softDelete() {
         this.deletedAt = OffsetDateTime.now();
+    }
+
+    /** 분할 재부모화 — {@link Packing#splitOff}만 부른다. */
+    void moveTo(Packing packing) {
+        this.packing = packing;
     }
 
     PackingItem(Packing packing, Long orderItemId, Long backorderId, Long allocationBatchId, int qty) {

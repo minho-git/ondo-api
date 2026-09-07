@@ -75,6 +75,33 @@ public class Packing {
         return item;
     }
 
+    /**
+     * 출고에 묶는 전이 (MUL-49) — READY 이고 아직 안 묶였을 때만. 409(PACKING_NOT_READY)
+     * 매핑은 출고 생성 서비스가 하고, 여기는 잘못된 전이를 막는 마지막 그물이다.
+     */
+    public void pack(Long outboundId) {
+        if (status != PackingStatus.READY || this.outboundId != null) {
+            throw new IllegalStateException("READY 상태의 미출고 포장만 출고에 묶을 수 있다.");
+        }
+        this.status = PackingStatus.PACKED;
+        this.outboundId = outboundId;
+    }
+
+    /**
+     * 일부 항목만 출고로 나갈 때 포장을 쪼갠다 (MUL-49 · D-073) — 남는 쪽(this)의 id 가
+     * 유지되어 대기열에 남고, 나가는 항목들이 새 포장으로 재부모화된다(항목 id 유지).
+     * 새 포장의 저장은 호출부 몫이다.
+     */
+    public Packing splitOff(List<PackingItem> departingItems) {
+        Packing departed = new Packing(this.orderId);
+        for (PackingItem item : departingItems) {
+            this.items.remove(item);
+            item.moveTo(departed);
+            departed.items.add(item);
+        }
+        return departed;
+    }
+
     public List<PackingItem> getItems() {
         return Collections.unmodifiableList(items);
     }

@@ -93,4 +93,32 @@ class PackingMappingTest extends PostgresTestSupport {
         assertThat(item.getQty()).isEqualTo(2);
         assertThat(item.getDeletedAt()).isNull();
     }
+
+    @Test
+    void 분할하면_남는쪽_id가_유지되고_항목_id도_유지된다() {
+        AllocationBatch batch = allocationBatchRepository.save(
+                AllocationBatch.builder().wholesalerId(wholesalerId).build());
+        Packing packing = Packing.builder().orderId(orderId).build();
+        packing.addItem(orderItemId, null, batch.getId(), 2);
+        packing.addItem(orderItemId, null, batch.getId(), 3);
+        packingRepository.save(packing);
+        em.flush();
+        Long originalId = packing.getId();
+        PackingItem moving = packing.getItems().get(1);
+        Long movingItemId = moving.getId();
+
+        Packing departed = packing.splitOff(java.util.List.of(moving));
+        packingRepository.save(departed);
+        em.flush();
+
+        // 남는 쪽 id 유지 (D-073) — 나가는 쪽이 새 포장이다
+        assertThat(packing.getId()).isEqualTo(originalId);
+        assertThat(departed.getId()).isNotNull().isNotEqualTo(originalId);
+        assertThat(packing.getItems()).hasSize(1);
+        assertThat(departed.getItems()).extracting(PackingItem::getId).containsExactly(movingItemId);
+        // 재부모화가 DB 에도 반영됐는지 — jdbc 확인 전에 flush 를 끝냈다
+        assertThat(jdbc.queryForObject(
+                "select packing_id from wholesale.packing_item where id = " + movingItemId, Long.class))
+                .isEqualTo(departed.getId());
+    }
 }

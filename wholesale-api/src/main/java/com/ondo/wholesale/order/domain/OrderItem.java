@@ -72,6 +72,11 @@ public class OrderItem {
         this.allocatedQty -= qty;
     }
 
+    /** 출고 반영 (MUL-49). 수량 사다리 검증은 호출부(출고 확정)가 락 아래서 끝낸다. */
+    public void ship(int shipQty) {
+        this.shippedQty += shipQty;
+    }
+
     OrderItem(Order order, Long variantId, int qty, int unitPrice) {
         this.order = order;
         this.variantId = variantId;
