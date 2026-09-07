@@ -20,6 +20,9 @@
 # 그래도 됐지만, 지금 이 환경은 실제로 개발 환경이다. 이름을 사실대로 붙인다.
 #
 # 운영을 띄울 때는 이 값을 prod 로 준다. 그것만으로 시드와 쿠키 개방이 같이 꺼진다.
+#
+# 아래 태스크 정의가 "deploy," 를 앞에 붙여 넘긴다 (MUL-103). 순서가 곧
+# 우선순위다 — 뒤에 켜진 프로필이 이긴다.
 variable "spring_profile" {
   description = "ECS 태스크가 쓸 스프링 프로필 (dev | prod)"
   type        = string
@@ -141,7 +144,12 @@ resource "aws_ecs_task_definition" "retail" {
     }]
 
     environment = [
-      { name = "SPRING_PROFILES_ACTIVE", value = var.spring_profile },
+      # deploy 가 앞, 환경이 뒤다. 스프링은 뒤에 켜진 프로필이 이기므로
+      # 이 순서라야 dev/prod 가 deploy 의 값을 덮을 수 있다 (MUL-103).
+      #
+      # 전에는 application.yml 의 profiles.group 이 deploy 를 붙였는데, 그러면
+      # deploy 가 뒤로 가서 반대로 동작했다.
+      { name = "SPRING_PROFILES_ACTIVE", value = "deploy,${var.spring_profile}" },
       { name = "DB_URL", value = "jdbc:postgresql://${aws_db_instance.retail.endpoint}/ondo_retail" },
       { name = "DB_USERNAME", value = "ondo" },
       { name = "CORS_ALLOWED_ORIGINS", value = var.retail_cors_origins },
@@ -204,7 +212,12 @@ resource "aws_ecs_task_definition" "wholesale" {
     }]
 
     environment = [
-      { name = "SPRING_PROFILES_ACTIVE", value = var.spring_profile },
+      # deploy 가 앞, 환경이 뒤다. 스프링은 뒤에 켜진 프로필이 이기므로
+      # 이 순서라야 dev/prod 가 deploy 의 값을 덮을 수 있다 (MUL-103).
+      #
+      # 전에는 application.yml 의 profiles.group 이 deploy 를 붙였는데, 그러면
+      # deploy 가 뒤로 가서 반대로 동작했다.
+      { name = "SPRING_PROFILES_ACTIVE", value = "deploy,${var.spring_profile}" },
       { name = "DB_URL", value = "jdbc:postgresql://${aws_db_instance.wholesale.endpoint}/ondo_wholesale" },
       { name = "DB_USERNAME", value = "ondo" },
       # ⚠️ 도매는 배포 설정에 CORS 가 아직 없다(MUL-86 이 local 에만 넣었다).

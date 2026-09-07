@@ -4,18 +4,23 @@ spring:
   profiles:
     default: local
 
-    # 배포 환경 둘이 공통 설정을 같이 쓰게 묶는다 (MUL-104).
+    # 배포는 프로필 둘을 켠다 (MUL-104) — 태스크 정의가 순서대로 준다 (MUL-103).
     #
-    #   SPRING_PROFILES_ACTIVE=dev   ->  application-deploy.yml + application-dev.yml
-    #   SPRING_PROFILES_ACTIVE=prod  ->  application-deploy.yml + application-prod.yml
+    #   SPRING_PROFILES_ACTIVE=deploy,dev    application-deploy.yml + application-dev.yml
+    #   SPRING_PROFILES_ACTIVE=deploy,prod   application-deploy.yml + application-prod.yml
     #
     # 공통을 이 파일(application.yml)에 못 두는 이유 - 여긴 로컬도 읽는다.
     # ${DB_URL} 같은 걸 넣으면 로컬에서 그 환경변수가 없어 앱이 안 뜬다.
     #
-    # ECS 는 dev 나 prod 하나만 주면 된다. deploy 는 여기서 따라붙는다.
-    group:
-      dev: deploy
-      prod: deploy
+    # 전에는 여기 profiles.group 으로 deploy 를 붙였다. 뺀 이유 - 그룹은 deploy 를
+    # 뒤에 놓는데 스프링은 뒤에 켜진 프로필이 이긴다. 그래서 deploy 값을 dev/prod 가
+    # 못 덮었다. 실제로 같은 값을 양쪽에 넣고 띄워 확인했다.
+    #
+    # 이제 순서를 태스크 정의(infra/ecs.tf)가 정한다. deploy 가 앞, 환경이 뒤다 -
+    # 아래가 깔고 위가 덮는다.
+    #
+    # deploy 를 빠뜨리면 ${DB_URL} 이 안 들어와 기동에 실패한다. 조용히 잘못
+    # 도는 게 아니라 시끄럽게 죽는다.
   flyway:
     default-schema: wholesale   # 이력 테이블(flyway_schema_history)이 여기 생긴다
     out-of-order: true          # 병렬 작업(V7 재고·V8 출고)이 어느 순서로 머지돼도 적용되게

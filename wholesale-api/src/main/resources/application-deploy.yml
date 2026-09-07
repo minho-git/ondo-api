@@ -30,10 +30,22 @@ server:
       cookie:
         secure: true   # 배포는 https 다. 이걸 안 켜면 쿠키가 http 로도 나간다
 
-# 소매 접점 시크릿 (MUL-87).
-#
-# 끝에 `:` 를 안 붙인다. 없으면 소매 접점이 누구에게나 열리기 때문이다.
-# 그럴 바에는 기동을 실패시키는 게 낫다 — ECS 배포 회로차단기가 이전 태스크로 되돌린다.
 ondo:
+  # 도매 POS 화면의 교차 출처 호출 허용 (MUL-86 · MUL-103).
+  #
+  # CorsConfig 는 처음부터 이 값을 읽었고 태스크 정의도 CORS_ALLOWED_ORIGINS 를
+  # 주고 있었는데, 이 줄이 없어서 이어지지 않았다. 환경변수 이름과 프로퍼티 이름은
+  # 자동으로 안 맞는다 — ondo.cors.allowed-origins 를 환경변수로 주려면
+  # ONDO_CORS_ALLOWEDORIGINS 여야 한다. 그래서 여기서 명시적으로 잇는다.
+  #
+  # 값이 비면 교차 출처가 전부 막힐 뿐이고, 헬스체크와 소매→도매 서버 간 호출은
+  # 그대로 된다 — 실수했을 때 닫히는 쪽으로 넘어진다. 소매와 같은 판단이다.
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+
+  # 소매 접점 시크릿 (MUL-87).
+  #
+  # 끝에 `:` 를 안 붙인다. 없으면 소매 접점이 누구에게나 열리기 때문이다.
+  # 그럴 바에는 기동을 실패시키는 게 낫다 — ECS 배포 회로차단기가 이전 태스크로 되돌린다.
   gateway:
     secret: ${ONDO_GATEWAY_SECRET}

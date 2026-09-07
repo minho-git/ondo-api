@@ -1,5 +1,21 @@
 # 로컬 개발용. db/compose.yml 로 띄운 소매 PostgreSQL 을 본다.
 spring:
+  # 로컬도 개발 환경이다 — 시드를 읽는다 (MUL-103).
+  #
+  # V2·V3(개발 계정)를 db/migration 에서 db/seed 로 옮겼다. 마이그레이션 폴더는
+  # 운영도 읽어서, 비밀번호가 코드에 적힌 계정이 실서비스에 생기기 때문이다.
+  #
+  # 그러면 로컬이 깨진다 — 이력 테이블엔 "V2 적용됨" 이 남아 있는데 파일을
+  # 못 찾으면 Flyway 가 기동을 막는다. 이 줄이 그걸 잇는다.
+  #
+  # 통째로 덮어쓰는 값이라 db/migration 을 같이 적어야 한다. 안 적으면
+  # 진짜 스키마가 안 들어간다.
+  #
+  # 덤으로 V900(가짜 상품·주문)도 로컬에 들어온다. 배포 dev 와 같은 데이터로
+  # 개발하게 된다 — 화면에 뭐가 보이는지가 환경마다 다르지 않다.
+  flyway:
+    locations: classpath:db/migration,classpath:db/seed
+
   datasource:
     url: jdbc:postgresql://localhost:5433/ondo_retail
     username: ondo
