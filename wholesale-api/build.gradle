@@ -51,6 +51,21 @@ jacoco {
 
 tasks.named('test') {
 	useJUnitPlatform()
+
+	// 테스트 JVM 을 KST 로 고정한다 (MUL-105).
+	//
+	// 기간 필터는 운영 코드가 한국 날짜를 전제한다 — KstDays 가 Asia/Seoul 로
+	// 하루 경계를 잡는다. 그런데 테스트가 LocalDate.now() 를 쓰면 JVM 기본
+	// 시간대를 따라가서, 둘이 어긋나는 환경에서만 깨진다.
+	//
+	// 팀 노트북이 전부 KST 라 안 보였다. GitHub 러너는 UTC 다. UTC 로 15시가
+	// 넘으면 한국은 이미 다음 날이라 LocalDate.now() 가 하루 어긋나고,
+	// OrderSummaryReaderTest 의 기간 단언이 실패한다 — 하루 중 9시간만 깨지는
+	// 형태라 원인 찾기가 나쁘다.
+	//
+	// db/compose.yml 이 TZ: Asia/Seoul 로 맞춰 둔 것과 같은 이유다
+	systemProperty 'user.timezone', 'Asia/Seoul'
+
 	finalizedBy tasks.named('jacocoTestReport')   // 테스트 후 리포트 자동 생성
 }
 
