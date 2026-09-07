@@ -36,6 +36,8 @@ class PackingQueueIntegrationTest extends PostgresTestSupport {
     @Autowired JdbcTemplate jdbc;
 
     private long wholesalerId;
+    private long leafId;
+    private long colorId;
     private long 가나상회;
     private long 다라상회;
     private long 니트;
@@ -48,8 +50,8 @@ class PackingQueueIntegrationTest extends PostgresTestSupport {
     @BeforeEach
     void 대기열을_심는다() {
         wholesalerId = MasterDataFixture.도매처를_넣는다(jdbc, "queue@ondo.test", "9500000035");
-        long leafId = MasterDataFixture.카테고리_리프를_넣는다(jdbc, 9160);
-        long colorId = MasterDataFixture.색상을_넣는다(jdbc, 9260, 9261);
+        leafId = MasterDataFixture.카테고리_리프를_넣는다(jdbc, 9160);
+        colorId = MasterDataFixture.색상을_넣는다(jdbc, 9260, 9261);
         니트 = OrderFixture.상품_변형을_넣는다(jdbc, wholesalerId, leafId, colorId, "니트", 1);
         셔츠 = OrderFixture.상품_변형을_넣는다(jdbc, wholesalerId, leafId, colorId, "셔츠", 2);
         가나상회 = OrderFixture.거래처를_넣는다(jdbc, wholesalerId, 711L, "가나상회");
@@ -169,6 +171,24 @@ class PackingQueueIntegrationTest extends PostgresTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].productName").value("셔츠"));
+    }
+
+    @Test
+    void 펼침은_2XL_라벨_사이즈도_그대로_내린다() throws Exception {
+        // DB 는 '2XL' 라벨로 저장한다 (SizeConverter) — enum 상수명(X2L)으로 읽으면 깨진다
+        long 패딩 = OrderFixture.상품_변형을_넣는다(jdbc, wholesalerId, leafId, colorId, "패딩", 3);
+        jdbc.update("update wholesale.variant set size = '2XL' where id = ?", 패딩);
+        long 주문E = OutboundFixture.확정주문을_넣는다(jdbc, wholesalerId, 가나상회, 4, "RETAILER", OffsetDateTime.now());
+        long 라인E = OrderFixture.라인을_넣는다(jdbc, 주문E, 패딩, 2, 1000, 2, 0);
+        long 포장E = OrderFixture.포장을_넣는다(jdbc, 주문E, "READY");
+        OrderFixture.포장항목을_넣는다(jdbc, 포장E, 라인E, null, batchId, 2, false);
+
+        mvc.perform(get("/api/wholesale/packing-items")
+                        .param("retailerId", "711").param("q", "패딩")
+                        .with(TestSecuritySupport.approvedAs(wholesalerId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].size").value("2XL"));
     }
 
     @Test
