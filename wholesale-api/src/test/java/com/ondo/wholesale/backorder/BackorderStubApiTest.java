@@ -16,7 +16,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -34,22 +33,12 @@ class BackorderStubApiTest {
     @Autowired
     private MockMvc mvc;
 
-    /** 조회는 실구현(통합 테스트 범위) — 컨트롤러 생성에만 필요해 모킹한다. */
+    /** 조회·배분은 실구현(통합 테스트 범위) — 컨트롤러 생성에만 필요해 모킹한다. */
     @MockitoBean
     private BackorderQueryService backorderQueryService;
 
-    @Test
-    void 미송배분은_201로_주문별_카드와_해소된_미송id를_내린다() throws Exception {
-        mvc.perform(post("/api/wholesale/backorders/allocations")
-                        .with(TestSecuritySupport.approved())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                { "items": [ { "backorderId": 6101, "allocateQty": 12 } ] }
-                                """))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.packings[0].status").value("READY"))
-                .andExpect(jsonPath("$.data.resolvedBackorderIds[0]").value(6101));
-    }
+    @MockitoBean
+    private BackorderAllocationService backorderAllocationService;
 
     @Test
     void 예상입고일_등록은_저장값을_그대로_돌려준다() throws Exception {

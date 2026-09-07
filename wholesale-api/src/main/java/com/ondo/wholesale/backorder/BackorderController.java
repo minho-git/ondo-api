@@ -37,6 +37,7 @@ import java.util.List;
 public class BackorderController {
 
     private final BackorderQueryService backorderQueryService;
+    private final BackorderAllocationService backorderAllocationService;
 
     @Operation(summary = "미송 SKU 목록 (아코디언 헤더)", description = """
             미송이 남은 SKU 만 나온다 — 전부 해소된 SKU 는 빠진다. 기본 정렬
@@ -77,8 +78,9 @@ public class BackorderController {
             `INSUFFICIENT_STOCK`(합계 초과라 field 가 `items`)""")
     @PostMapping("/backorders/allocations")
     @ResponseStatus(HttpStatus.CREATED)
-    public AllocationBatchResponse allocate(@RequestBody BackorderAllocationRequest request) {
-        return BackorderStubExamples.allocationBatch();
+    public AllocationBatchResponse allocate(@AuthenticationPrincipal WholesalePrincipal principal,
+                                            @RequestBody BackorderAllocationRequest request) {
+        return backorderAllocationService.allocate(principal.wholesalerId(), request);
     }
 
     @Operation(summary = "예상 입고일 등록 (전체 대체)", description = """
