@@ -43,6 +43,8 @@ class OutboundListIntegrationTest extends PostgresTestSupport {
     @Autowired JdbcTemplate jdbc;
 
     private long wholesalerId;
+    private long leafId;
+    private long colorId;
     private long 가나상회;
     private long 니트;
     private long 셔츠;
@@ -54,8 +56,8 @@ class OutboundListIntegrationTest extends PostgresTestSupport {
     @BeforeEach
     void 봉투들을_심는다() {
         wholesalerId = MasterDataFixture.도매처를_넣는다(jdbc, "outbound-list@ondo.test", "9500000037");
-        long leafId = MasterDataFixture.카테고리_리프를_넣는다(jdbc, 9160);
-        long colorId = MasterDataFixture.색상을_넣는다(jdbc, 9260, 9261);
+        leafId = MasterDataFixture.카테고리_리프를_넣는다(jdbc, 9160);
+        colorId = MasterDataFixture.색상을_넣는다(jdbc, 9260, 9261);
         니트 = OrderFixture.상품_변형을_넣는다(jdbc, wholesalerId, leafId, colorId, "니트", 1);
         셔츠 = OrderFixture.상품_변형을_넣는다(jdbc, wholesalerId, leafId, colorId, "셔츠", 2);
         가나상회 = OrderFixture.거래처를_넣는다(jdbc, wholesalerId, 731L, "가나상회");
@@ -236,6 +238,23 @@ class OutboundListIntegrationTest extends PostgresTestSupport {
                         .with(TestSecuritySupport.approvedAs(wholesalerId)))
                 .andExpect(jsonPath("$.data.isShippable").value(false))
                 .andExpect(jsonPath("$.data.totalQty").value(0));
+    }
+
+    @Test
+    void 상세는_2XL_라벨_사이즈도_그대로_내린다() throws Exception {
+        // DB 는 '2XL' 라벨로 저장한다 (SizeConverter) — enum 상수명(X2L)으로 읽으면 깨진다
+        long 패딩 = OrderFixture.상품_변형을_넣는다(jdbc, wholesalerId, leafId, colorId, "패딩", 3);
+        jdbc.update("update wholesale.variant set size = '2XL' where id = ?", 패딩);
+        long 출고5 = OutboundFixture.출고를_넣는다(jdbc, wholesalerId, 가나상회, 5);
+        long 주문F = OutboundFixture.확정주문을_넣는다(jdbc, wholesalerId, 가나상회, 6, "RETAILER", 팔월12);
+        long 라인F = OrderFixture.라인을_넣는다(jdbc, 주문F, 패딩, 2, 1000, 2, 0);
+        long 포장F = OutboundFixture.묶인_포장을_넣는다(jdbc, 주문F, 출고5);
+        OrderFixture.포장항목을_넣는다(jdbc, 포장F, 라인F, null, batchId, 2, false);
+
+        mvc.perform(get("/api/wholesale/outbounds/" + 출고5)
+                        .with(TestSecuritySupport.approvedAs(wholesalerId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].size").value("2XL"));
     }
 
     @Test

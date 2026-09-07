@@ -3,7 +3,6 @@ package com.ondo.wholesale.outbound.controller;
 import com.ondo.wholesale.common.response.ApiResponse;
 import com.ondo.wholesale.order.ReceiveBy;
 import com.ondo.wholesale.outbound.OutboundStatusFilter;
-import com.ondo.wholesale.outbound.OutboundStubExamples;
 import com.ondo.wholesale.outbound.dto.OutboundCreateRequest;
 import com.ondo.wholesale.outbound.dto.OutboundCreatedResponse;
 import com.ondo.wholesale.outbound.dto.OutboundDetailResponse;
@@ -37,9 +36,6 @@ import java.util.List;
 
 /**
  * 출고 API (MUL-49) — 원본 계약: api-lite/06_출고.
- *
- * <p>출고 확정(ship)·장끼(statement)는 아직 계약 스텁(MUL-83)이다 — 재고 원장
- * 부품(MUL-72)이 합류한 뒤 실구현으로 교체한다.
  */
 @Tag(name = "06 출고")
 @RestController
@@ -150,8 +146,9 @@ public class OutboundController {
             에러: 404 `RESOURCE_NOT_FOUND` / 409 `TRANSITION_NOT_ALLOWED` · `OUTBOUND_EMPTY` ·
             `INSUFFICIENT_STOCK` · `INVARIANT_VIOLATED`""")
     @PostMapping("/outbounds/{outboundId}/ship")
-    public OutboundDetailResponse ship(@PathVariable Long outboundId) {
-        return OutboundStubExamples.detailAfterShip();
+    public OutboundDetailResponse ship(@AuthenticationPrincipal WholesalePrincipal principal,
+                                       @PathVariable Long outboundId) {
+        return outboundCommandService.ship(principal.wholesalerId(), outboundId);
     }
 
     @Operation(summary = "장끼 (거래명세서)", description = """
@@ -160,7 +157,8 @@ public class OutboundController {
 
             에러: 404 `RESOURCE_NOT_FOUND` (아직 출고 확정 전 포함)""")
     @GetMapping("/outbounds/{outboundId}/statement")
-    public StatementResponse statement(@PathVariable Long outboundId) {
-        return OutboundStubExamples.statement();
+    public StatementResponse statement(@AuthenticationPrincipal WholesalePrincipal principal,
+                                       @PathVariable Long outboundId) {
+        return outboundQueryService.statement(principal.wholesalerId(), outboundId);
     }
 }

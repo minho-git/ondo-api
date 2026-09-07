@@ -79,7 +79,8 @@ public class PackingQueueQueryService {
                     rs.getLong("order_id"), rs.getInt("order_number"),
                     rs.getLong("variant_id"), rs.getInt("product_number"), rs.getInt("variant_seq"),
                     rs.getString("product_name"), rs.getString("color_name"),
-                    Size.valueOf(rs.getString("size")),
+                    // DB 는 '2XL' 라벨로 저장한다 (SizeConverter) — valueOf 는 상수명이라 깨진다
+                    Size.fromLabel(rs.getString("size")),
                     ReceiveBy.valueOf(rs.getString("receive_method")),
                     rs.getObject("ordered_at", OffsetDateTime.class),
                     rs.getInt("qty")));

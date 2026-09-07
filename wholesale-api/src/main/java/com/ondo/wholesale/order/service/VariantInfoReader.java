@@ -42,7 +42,8 @@ public class VariantInfoReader {
             result.put(rs.getLong("id"), new VariantInfo(
                     rs.getInt("product_number"), rs.getInt("variant_seq"),
                     rs.getString("product_name"), rs.getString("color_name"),
-                    Size.valueOf(rs.getString("size")), rs.getInt("available")));
+                    // DB 는 '2XL' 라벨로 저장한다 (SizeConverter) — valueOf 는 상수명이라 깨진다
+                    Size.fromLabel(rs.getString("size")), rs.getInt("available")));
         });
         return result;
     }
