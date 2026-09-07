@@ -9,6 +9,7 @@ import com.ondo.wholesale.outbound.dto.OutboundDetailResponse;
 import com.ondo.wholesale.outbound.dto.OutboundItemResponse;
 import com.ondo.wholesale.outbound.dto.OutboundRetailerResponse;
 import com.ondo.wholesale.outbound.dto.OutboundSummaryResponse;
+import com.ondo.wholesale.outbound.dto.StatementResponse;
 import com.ondo.wholesale.outbound.repository.OutboundRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -96,6 +97,28 @@ public class OutboundQueryService {
                 partner.getRetailerId(), partner.getRetailerName(),
                 outbound.getCreatedAt(), outbound.getShippedAt(), outbound.getStatementNumber(),
                 shippable, totalQty, items, reader.packingRefs(outboundId));
+    }
+
+    /** 장끼 — 다운로드·인쇄의 원본 데이터. 확정 전에는 문서가 없는 것과 같아서 404 다. */
+    public StatementResponse statement(Long wholesalerId, Long outboundId) {
+        Outbound outbound = outboundRepository.findByIdAndWholesalerId(outboundId, wholesalerId)
+                .orElseThrow(() -> new ResourceNotFoundException("출고가 없거나 접근할 수 없습니다."));
+        if (outbound.getShippedAt() == null) {
+            throw new ResourceNotFoundException("아직 확정되지 않은 출고입니다.");
+        }
+        Partner partner = partnerRepository.findById(outbound.getPartnerId()).orElseThrow();
+        String sellerName = jdbc.queryForObject(
+                "select biz_name from wholesale.wholesaler where id = :id",
+                new MapSqlParameterSource("id", wholesalerId), String.class);
+        List<OutboundItemResponse> sku = reader.skuItems(outboundId);
+        OutboundReader.Summary summary = reader.summaries(List.of(outboundId)).get(outboundId);
+        return new StatementResponse(
+                outbound.getStatementNumber(), outbound.getOutboundNumber(), outbound.getShippedAt(),
+                sellerName, partner.getRetailerName(),
+                summary == null ? null : summary.receiveBy(),
+                sku.stream().mapToInt(OutboundItemResponse::qty).sum(),
+                sku.stream().map(item -> new StatementResponse.Item(
+                        item.productName(), item.color(), item.size().label(), item.qty())).toList());
     }
 
     private OutboundSummaryResponse summaryRow(Outbound outbound, OutboundReader.Summary summary) {
