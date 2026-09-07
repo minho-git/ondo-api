@@ -47,4 +47,14 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+
+	// 테스트 JVM 을 KST 로 고정한다 (MUL-105).
+	//
+	// 도매에서 실제로 터졌던 것을 소매에도 미리 막는다. 기간 필터는 한국 날짜를
+	// 전제하는데 테스트가 LocalDate.now() 를 쓰면 JVM 기본 시간대를 따라가서,
+	// 둘이 어긋나는 환경에서만 깨진다. 팀 노트북은 전부 KST 라 안 보이고
+	// GitHub 러너는 UTC 다 — UTC 로 15시가 넘으면 한국은 이미 다음 날이다.
+	//
+	// db/compose.yml 이 TZ: Asia/Seoul 로 맞춰 둔 것과 같은 이유다
+	systemProperty 'user.timezone', 'Asia/Seoul'
 }
