@@ -121,6 +121,19 @@ class AuthServiceTest {
     }
 
     @Test
+    @DisplayName("실행 파일에 png 이름을 붙여도 막힌다 — Content-Type 을 안 믿는다")
+    void 가입_확장자만_바꾼_파일() {
+        // 브라우저가 보내는 Content-Type 은 조작된다. 전에는 이게 그대로 통과했다
+        MockMultipartFile 위장 = new MockMultipartFile(
+                "bizLicense", "사업자등록증.png", MediaType.IMAGE_PNG_VALUE,
+                new byte[] {0x7F, 0x45, 0x4C, 0x46, 0x02, 0x01, 0x01, 0x00});   // 리눅스 실행 파일
+
+        assertThatThrownBy(() -> authService.signUp(요청("disguised@ondo.test"), 위장))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.UNSUPPORTED_FILE_TYPE);
+    }
+
+    @Test
     @DisplayName("10MB 를 넘으면 받지 않는다")
     void 가입_파일_크기() {
         MockMultipartFile 큰파일 = new MockMultipartFile(
@@ -144,8 +157,15 @@ class AuthServiceTest {
                 "01011112222", "1112223333", List.of(TermsType.SERVICE, TermsType.PRIVACY));
     }
 
+    /**
+     * PNG 앞머리 여덟 바이트를 그대로 쓴다 (MUL-99).
+     *
+     * <p>전에는 넉 자만 넣었는데, 이제 파일 앞머리로 진짜 형식을 보기 때문에
+     * <b>진짜 PNG 여야 통과한다.</b> 뒤 네 바이트(0D 0A 1A 0A)는 PNG 규격이
+     * 전송 중 깨짐을 잡으려고 넣어둔 것이다.
+     */
     private MockMultipartFile 등록증() {
-        return new MockMultipartFile(
-                "bizLicense", "biz.png", MediaType.IMAGE_PNG_VALUE, new byte[] {(byte) 0x89, 'P', 'N', 'G'});
+        return new MockMultipartFile("bizLicense", "biz.png", MediaType.IMAGE_PNG_VALUE,
+                new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A});
     }
 }

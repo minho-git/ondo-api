@@ -23,9 +23,10 @@ public class LocalFileStorage implements FileStorage {
     }
 
     @Override
-    public String store(MultipartFile file, String directory) {
-        String extension = extensionOf(file.getOriginalFilename());
-        String name = UUID.randomUUID() + extension;
+    public String store(MultipartFile file, String directory, FileType type) {
+        // 이름도 확장자도 우리가 정한다. 사용자가 준 이름은 안 쓴다 —
+        // 경로 조작(../)이나 실행 가능한 확장자가 섞일 자리를 아예 없앤다
+        String name = UUID.randomUUID() + type.extension();
 
         try {
             Path target = root.resolve(directory).resolve(name);
@@ -39,12 +40,4 @@ public class LocalFileStorage implements FileStorage {
         }
     }
 
-    /** 원본 이름은 사용자가 정한 것이라 그대로 쓰지 않는다. 확장자만 떼어 쓴다. */
-    private static String extensionOf(String originalName) {
-        if (originalName == null) {
-            return "";
-        }
-        int dot = originalName.lastIndexOf('.');
-        return dot < 0 ? "" : originalName.substring(dot).toLowerCase();
-    }
 }
