@@ -228,8 +228,13 @@ resource "aws_ecs_task_definition" "wholesale" {
       { name = "SPRING_PROFILES_ACTIVE", value = "deploy,${var.spring_profile}" },
       { name = "DB_URL", value = "jdbc:postgresql://${aws_db_instance.wholesale.endpoint}/ondo_wholesale" },
       { name = "DB_USERNAME", value = "ondo" },
-      # ⚠️ 도매는 배포 설정에 CORS 가 아직 없다(MUL-86 이 local 에만 넣었다).
-      # 채빈이 환경변수를 받게 고치기 전까지 이 값은 무시된다
+      # 이 값은 실제로 적용된다.
+      #
+      # 한동안 무시됐었다 — CorsConfig 는 ondo.cors.allowed-origins 를 읽는데
+      # application-deploy.yml 에 그걸 환경변수로 잇는 줄이 없었다. 이름이
+      # 자동으로 안 맞기 때문이다(그러려면 ONDO_CORS_ALLOWEDORIGINS 여야 한다).
+      # MUL-103 에서 명시적으로 이었다 — application-deploy.yml 의
+      # `allowed-origins: ${CORS_ALLOWED_ORIGINS:}`.
       { name = "CORS_ALLOWED_ORIGINS", value = var.wholesale_cors_origins },
 
       # 개발 환경 시드(MUL-110)는 여기 없다. application-dev.yml 로 옮겼다 (MUL-104).
