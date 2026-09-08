@@ -166,6 +166,15 @@ resource "aws_ecs_task_definition" "retail" {
       # 사람이 기억해서 막아야 한다. 프로필 파일에 두면 dev 일 때만 읽히니 실수로 못 켠다.
       # 도매를 부르는 주소 (MUL-87). 내부 ALB 다
       { name = "WHOLESALE_BASE_URL", value = local.wholesale_base_url },
+
+      # 가입 서류를 둘 버킷 (MUL-100). 전에는 컨테이너 안에 썼는데 Fargate 라
+      # 태스크가 갈릴 때마다 사라졌다. 앱이 이 값을 못 받으면 기동에 실패한다 —
+      # 조용히 서류만 안 올라가는 것보다 낫다
+      { name = "DOCUMENTS_BUCKET", value = aws_s3_bucket.documents.bucket },
+
+      # SDK 가 리전을 환경에서 알아내기도 하지만 ECS 가 늘 넣어주는 값이 아니다.
+      # 없으면 기동이 아니라 첫 업로드에서 터진다
+      { name = "AWS_REGION", value = "ap-northeast-2" },
     ]
 
     secrets = [
