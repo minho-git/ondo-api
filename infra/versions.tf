@@ -18,6 +18,33 @@ terraform {
     }
   }
 
-  # state(만든 것의 기록)는 지금 로컬이다.
-  # C단계에서 S3 백엔드를 붙이고 -migrate-state 로 옮긴다.
+  # ── state 를 두는 곳 (MUL-111) ──────────────────────────────
+  #
+  # 전에는 로컬이었다. 그래서 이 파일이 곧 비밀이면서 내 노트북에만 있었다 —
+  # 노트북이 죽으면 「내가 뭘 만들었는지」가 통째로 사라지고, 팀원은 plan 조차
+  # 못 돌리고, CI 도 터라폼을 못 굴렸다(MUL-105 에서 실제로 막혔다).
+  #
+  # 버킷은 터라폼이 안 만들었다. 만들면 「그 버킷의 state 는 어디 두나」는
+  # 순환이 생긴다. 손으로 만들고 태그에 ManagedBy=manual-bootstrap 을 붙여 뒀다.
+  #
+  #   버전 관리   실수로 덮어써도 이전 state 로 되돌린다
+  #   AES256     소매 접점 시크릿(MUL-87) 값이 state 에 평문으로 남는다
+  #   퍼블릭 차단  4개 전부
+  #
+  # key 에 dev/ 를 붙인 건 나중에 운영 환경이 생겼을 때를 위해서다.
+  # 같은 버킷에 prod/terraform.tfstate 로 나란히 둔다.
+  backend "s3" {
+    bucket = "ondo-tfstate-172961885321"
+    key    = "dev/terraform.tfstate"
+    region = "ap-northeast-2"
+
+    # SSO 프로파일. providers.tf 와 달리 백엔드는 변수를 못 써서 값을 박는다
+    profile = "ondo"
+
+    # 잠금. 둘이 동시에 apply 하면 장부가 깨지는 걸 막는다.
+    # 예전엔 DynamoDB 테이블이 필요했는데 지금은 S3 만으로 된다 (터라폼 1.10+)
+    use_lockfile = true
+
+    encrypt = true
+  }
 }
