@@ -100,14 +100,47 @@ resource "aws_iam_role_policy" "exec_wholesale_gateway_secret" {
 
 # ── 태스크 역할 · 소매 ───────────────────────────────────────
 #
-# 앱이 직접 AWS 를 부를 때 쓴다. 지금은 부를 데가 없다 —
-# 파일을 아직 LocalFileStorage 로 컨테이너 안에 쓴다.
-# S3 구현체로 갈아끼울 때 여기에 S3 권한을 붙인다(MUL-77 「배포 전에 닫을 것」).
-# 빈 역할이라도 미리 만들어 두면 그때 정책만 더하면 된다.
+# 앱이 직접 AWS 를 부를 때 쓴다. 실행 역할(exec_retail)과 헷갈리면 안 된다 —
+# 그건 ECS 가 컨테이너를 띄우려고 쓰는 것이고(이미지 받기 · 시크릿 읽기 · 로그),
+# 이건 컨테이너 안에서 도는 자바 코드가 쓴다.
+#
+# 오래 비어 있었다. 파일을 컨테이너 안에 쓰고 있어서 앱이 AWS 를 부를 일이
+# 없었다. MUL-100 에서 S3 로 옮기며 채운다.
 resource "aws_iam_role" "task_retail" {
   name               = "${local.prefix}-task-retail"
   assume_role_policy = data.aws_iam_policy_document.ecs_assume.json
   tags               = { Name = "${local.prefix}-task-retail" }
+}
+
+# 가입 서류 버킷에 올리고 읽는다 (MUL-100).
+#
+# 객체 단위로만 준다. 버킷 자체에 대한 권한은 안 준다 —
+#
+#   ListBucket 을 안 주는 게 핵심이다. 파일 이름이 UUID 라 추측이 안 되는데,
+#   목록을 받을 수 있으면 그 방어가 통째로 무너진다. 앱은 자기가 만든 키를
+#   DB 에서 꺼내 쓰므로 목록이 필요 없다.
+#
+#   DeleteObject 도 안 준다. 증빙 서류를 앱이 지울 일이 없고, 앱이 뚫렸을 때
+#   지워지는 것보다는 남아 있는 게 낫다.
+#
+# 상품 이미지 버킷(listing_images)은 여기 없다. 그건 도매가 올리는 것이라
+# 채빈 영역이고, 지금 쓰는 코드도 없다.
+data "aws_iam_policy_document" "task_retail_documents" {
+  statement {
+    sid    = "PutGetDocuments"
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+    ]
+    resources = ["${aws_s3_bucket.documents.arn}/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "task_retail_documents" {
+  name   = "${local.prefix}-task-retail-documents"
+  role   = aws_iam_role.task_retail.id
+  policy = data.aws_iam_policy_document.task_retail_documents.json
 }
 
 resource "aws_iam_role" "task_wholesale" {
