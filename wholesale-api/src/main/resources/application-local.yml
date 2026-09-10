@@ -18,3 +18,9 @@ management:
     web:
       exposure:
         include: health, prometheus
+  metrics:
+    distribution:
+      # p95·p99 를 그라파나에서 계산하려면 히스토그램 버킷이 필요하다.
+      # 이게 없으면 합계·건수만 나가서 평균밖에 못 본다.
+      percentiles-histogram:
+        http.server.requests: true

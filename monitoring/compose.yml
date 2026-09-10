@@ -1,0 +1,43 @@
+# 로컬 모니터링 (MUL-115). 도매 API 메트릭을 긁어서 그라파나로 보여준다.
+# 배포용 아님 — 그라파나 익명 로그인이 켜져 있다.
+#
+#   docker compose -f monitoring/compose.yml up -d      모니터링 띄우기
+#   docker compose -f monitoring/compose.yml down       내리기 (데이터는 남는다)
+#   docker compose -f monitoring/compose.yml down -v    데이터까지 지우기
+#
+# 앱은 따로 띄운다 — cd wholesale-api && ./gradlew bootRun
+# 컨테이너가 호스트의 8081 을 보려고 host.docker.internal 을 쓴다.
+#
+#   프로메테우스  localhost:9090
+#   그라파나      localhost:3030   (3000·3001 은 프론트가 쓴다)
+
+name: ondo-monitoring
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0    # LTS. 버전을 못 박는다 — 팀과 같은 걸 써야 한다
+    container_name: ondo-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # 리눅스에서도 호스트를 찾게 한다. 맥은 원래 된다
+
+  grafana:
+    image: grafana/grafana:12.0.2
+    container_name: ondo-grafana
+    ports:
+      - "3030:3000"
+    environment:
+      # 로컬 전용 — 로그인 없이 바로 대시보드를 본다. 배포에 이대로 가져가면 안 된다
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  prometheus-data:
+  grafana-data:
