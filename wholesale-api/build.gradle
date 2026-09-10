@@ -22,6 +22,8 @@ repositories {
 dependencies {
 	// 헬스체크(MUL-76). ALB 가 30초마다 불러서 태스크가 살아있는지 본다
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	// 프로메테우스 메트릭(MUL-115). local 프로파일만 /actuator/prometheus 를 연다 — application-local.yml
+	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-flyway'
 	implementation 'org.flywaydb:flyway-database-postgresql'
