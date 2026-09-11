@@ -57,6 +57,10 @@ public class SecurityConfig {
                         // 헬스체크(MUL-76) — ALB 가 부른다. 401 이 나가면 배포가 영영 안 된다.
                         // 하위까지 여는 건 ALB 가 실제로 보는 게 /actuator/health/liveness 여서다.
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        // 프로메테우스 메트릭(MUL-115) — 로컬 모니터링(monitoring/)이 세션 없이 긁는다.
+                        // 배포는 이 엔드포인트 자체가 닫혀 있어(공통 application.yml 이 health 만 연다)
+                        // 경로를 열어 둬도 404 만 나간다.
+                        .requestMatchers("/actuator/prometheus").permitAll()
                         // 소매 접점(MUL-82·87) — 부르는 게 사람이 아니라 소매 백엔드라
                         // 도매 세션이 없다. 양쪽이 나눠 가진 시크릿 헤더로 확인한다.
                         // 이 경로는 내부 ALB 로만 들어오지만 네트워크만 믿지는 않는다 —

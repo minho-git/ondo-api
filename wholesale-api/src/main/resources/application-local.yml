@@ -9,3 +9,18 @@ spring:
 ondo:
   cors:
     allowed-origins: http://localhost:3000
+
+# 프로메테우스 메트릭 노출 (MUL-115). 로컬 모니터링(monitoring/compose.yml)이 긁어 간다.
+# 공통 application.yml 은 health 만 열어 둔다 — 배포에서 메트릭이 인터넷에 새지 않게
+# 로컬에서만 덧붙인다.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+  metrics:
+    distribution:
+      # p95·p99 를 그라파나에서 계산하려면 히스토그램 버킷이 필요하다.
+      # 이게 없으면 합계·건수만 나가서 평균밖에 못 본다.
+      percentiles-histogram:
+        http.server.requests: true

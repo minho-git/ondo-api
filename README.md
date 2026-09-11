@@ -7,6 +7,7 @@
 | `retail-api/` | 소매 API |
 | `wholesale-api/` | 도매 API |
 | `db/` | 로컬 DB 두 대를 띄우는 compose |
+| `monitoring/` | 로컬 모니터링(프로메테우스 + 그라파나) compose |
 
 ## 로컬에서 띄우기
 
@@ -27,6 +28,27 @@ cd retail-api    && ./gradlew bootRun     # 8080
 ```
 
 **앱이 뜰 때 Flyway 가 자기 스키마를 넣는다.** 빈 DB 로 시작해도 된다.
+
+## 모니터링 (로컬 전용)
+
+```bash
+docker compose -f monitoring/compose.yml up -d
+```
+
+프로메테우스가 도매 API(8081)의 `/actuator/prometheus` 를 5초마다 긁고,
+그라파나가 그걸 보여준다. 도매 앱을 띄운 상태여야 데이터가 잡힌다.
+
+```
+그라파나      localhost:3030   로그인 없음. "도매 API" 대시보드가 자동으로 있다
+프로메테우스  localhost:9090
+```
+
+대시보드에서 보는 것 — HTTP 처리량·에러율·p95/p99 지연, 느린 API 상위 5개,
+Hikari 커넥션 풀, JVM 힙. 메트릭 노출은 local 프로파일에서만 열린다 —
+배포는 health 만 나간다.
+
+소매를 붙이려면 `monitoring/prometheus/prometheus.yml` 에 잡을 추가하고
+retail-api 에 micrometer-registry-prometheus 의존성을 넣는다.
 
 ## 스키마를 바꿀 때
 
