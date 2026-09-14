@@ -35,20 +35,18 @@ cd retail-api    && ./gradlew bootRun     # 8080
 docker compose -f monitoring/compose.yml up -d
 ```
 
-프로메테우스가 도매 API(8081)의 `/actuator/prometheus` 를 5초마다 긁고,
-그라파나가 그걸 보여준다. 도매 앱을 띄운 상태여야 데이터가 잡힌다.
+프로메테우스가 도매 API(8081)와 소매 API(8080)의 `/actuator/prometheus` 를 5초마다 긁고,
+그라파나가 그걸 보여준다. 앱을 띄운 상태여야 데이터가 잡힌다 — 안 띄운 쪽은
+프로메테우스 대상 목록에 down 으로 보일 뿐이다.
 
 ```
-그라파나      localhost:3030   로그인 없음. "도매 API" 대시보드가 자동으로 있다
+그라파나      localhost:3030   로그인 없음. "도매 API" · "소매 API" 대시보드가 자동으로 있다
 프로메테우스  localhost:9090
 ```
 
 대시보드에서 보는 것 — HTTP 처리량·에러율·p95/p99 지연, 느린 API 상위 5개,
 Hikari 커넥션 풀, JVM 힙. 메트릭 노출은 local 프로파일에서만 열린다 —
 배포는 health 만 나간다.
-
-소매를 붙이려면 `monitoring/prometheus/prometheus.yml` 에 잡을 추가하고
-retail-api 에 micrometer-registry-prometheus 의존성을 넣는다.
 
 ## 스키마를 바꿀 때
 
