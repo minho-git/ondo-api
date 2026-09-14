@@ -21,6 +21,9 @@ repositories {
 dependencies {
 	// 헬스체크(MUL-76). ALB 가 30초마다 불러서 태스크가 살아있는지 본다
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	// 프로메테우스 메트릭(MUL-117). 라이브러리는 모든 환경에 들어간다 —
+	// 엔드포인트를 여는 건 application-local.yml 뿐이라 배포는 health 만 나간다
+	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-flyway'
 	implementation 'org.flywaydb:flyway-database-postgresql'

@@ -1,5 +1,4 @@
-# 스크레이프 대상 (MUL-115). 지금은 도매만 긁는다.
-# 소매가 합류하려면 여기 잡을 추가하고 retail-api 에 micrometer 의존성을 넣으면 된다.
+# 스크레이프 대상 (MUL-115). 소매는 MUL-117 에서 합류했다.
 
 global:
   scrape_interval: 5s   # 부하 테스트 때 변화를 촘촘히 보려고 기본(1m)보다 짧게
@@ -9,3 +8,8 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets: ["host.docker.internal:8081"]
+
+  - job_name: retail-api
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["host.docker.internal:8080"]

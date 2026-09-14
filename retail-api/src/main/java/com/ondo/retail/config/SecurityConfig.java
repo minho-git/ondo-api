@@ -35,7 +35,11 @@ public class SecurityConfig {
             // 헬스체크(MUL-76). ALB 가 부른다 — 401 이 나가면 배포가 영영 안 된다.
             // 하위까지 여는 건 ALB 가 실제로 보는 게 /actuator/health/liveness 여서다.
             "/actuator/health",
-            "/actuator/health/**"
+            "/actuator/health/**",
+            // 프로메테우스 메트릭(MUL-117) — 로컬 모니터링(monitoring/)이 세션 없이 긁는다.
+            // 배포는 이 엔드포인트 자체가 닫혀 있어(application.yml 이 health 만 연다)
+            // 경로를 열어 둬도 404 만 나간다. 도매(MUL-115)와 같은 판단이다.
+            "/actuator/prometheus"
     };
 
     /**
