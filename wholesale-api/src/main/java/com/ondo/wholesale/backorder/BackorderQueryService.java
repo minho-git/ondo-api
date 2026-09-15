@@ -99,7 +99,8 @@ public class BackorderQueryService {
                         rs.getString("product_name"), rs.getString("color_name"),
                         Size.fromLabel(rs.getString("size")),
                         rs.getInt("backorder_qty"), rs.getInt("available_qty"),
-                        rs.getObject("expected_inbound_date", LocalDate.class)))
+                        rs.getObject("expected_inbound_date", LocalDate.class),
+                        rs.getObject("latest_backordered_at", OffsetDateTime.class)))
                 .list();
 
         int totalPages = (int) ((total + size - 1) / size);
