@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,7 +50,8 @@ class DashboardSummaryReaderIntegrationTest extends PostgresTestSupport {
 
     @Test
     void 신규_주문만_세고_가장_오래된_접수와_소매처를_찾는다() {
-        OffsetDateTime 세시간전 = OffsetDateTime.now().minusHours(3);
+        // timestamptz 는 마이크로초까지만 저장한다 — 나노초가 있으면 (Linux CI) 왕복 후 비교가 깨진다
+        OffsetDateTime 세시간전 = OffsetDateTime.now().minusHours(3).truncatedTo(ChronoUnit.MICROS);
         OrderFixture.주문을_넣는다(jdbc, wholesalerId, 봄봄, nextOrderNumber++, "NEW", 세시간전);
         OrderFixture.주문을_넣는다(jdbc, wholesalerId, 모모샵, nextOrderNumber++, "NEW",
                 OffsetDateTime.now().minusHours(1));
