@@ -1,5 +1,6 @@
 package com.ondo.wholesale.backorder;
 
+import com.jayway.jsonpath.JsonPath;
 import com.ondo.wholesale.security.support.TestSecuritySupport;
 import com.ondo.wholesale.support.MasterDataFixture;
 import com.ondo.wholesale.support.OrderFixture;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -116,6 +118,29 @@ class BackorderSkuListIntegrationTest extends PostgresTestSupport {
                 .andExpect(jsonPath("$.data[0].backorderQty").value(6))
                 .andExpect(jsonPath("$.data[0].availableQty").value(8))
                 .andExpect(jsonPath("$.data[0].expectedInboundDate").isEmpty());
+    }
+
+    @Test
+    void 미송_SKU_응답에_최근_미송_발생_시각이_실린다() throws Exception {
+        // 미송 두 건 — 방금 것과 사흘 전 것. 응답에는 더 최근 시각이 실려야 한다
+        long 티셔츠 = 미송_SKU를_심는다("티셔츠", 6, 2, 10);
+        long 주문2 = OrderFixture.주문을_넣는다(jdbc, wholesalerId, partnerId, nextOrderNumber++,
+                "CONFIRMED", OffsetDateTime.now());
+        long 라인2 = OrderFixture.라인을_넣는다(jdbc, 주문2, 티셔츠, 2, 1000, 0, 0);
+        OrderFixture.미송을_넣는다(jdbc, 라인2, 2, "OPEN");
+        jdbc.update("""
+                update wholesale.backorder set created_at = now() - make_interval(days => 3)
+                where order_item_id = ?
+                """, 라인2);
+
+        String body = mvc.perform(목록조회())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].latestBackorderedAt").exists())
+                .andReturn().getResponse().getContentAsString();
+
+        OffsetDateTime latest = OffsetDateTime.parse(
+                JsonPath.<String>read(body, "$.data[0].latestBackorderedAt"));
+        assertThat(latest).isAfter(OffsetDateTime.now().minusMinutes(5));
     }
 
     @Test
