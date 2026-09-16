@@ -1,0 +1,22 @@
+diff --git a/wholesale-api/src/main/java/com/ondo/wholesale/retailgateway/RetailGatewayListingQuery.java b/wholesale-api/src/main/java/com/ondo/wholesale/retailgateway/RetailGatewayListingQuery.java
+index 9fa93a9..f7d285d 100644
+--- a/wholesale-api/src/main/java/com/ondo/wholesale/retailgateway/RetailGatewayListingQuery.java
++++ b/wholesale-api/src/main/java/com/ondo/wholesale/retailgateway/RetailGatewayListingQuery.java
+@@ -76,10 +76,13 @@ public class RetailGatewayListingQuery {
+         String where = buildWhere(condition, params);
+ 
+         return jdbc.sql("""
+-                        SELECT count(*)
+-                        FROM wholesale.listing l
+-                        JOIN wholesale.product p ON p.id = l.product_id
+-                        WHERE %s
++                        SELECT count(*) FROM (
++                            SELECT 1
++                            FROM wholesale.listing l
++                            JOIN wholesale.product p ON p.id = l.product_id
++                            WHERE %s
++                            LIMIT 1001
++                        ) capped
+                         """.formatted(where))
+                 .params(params)
+                 .query(Long.class)

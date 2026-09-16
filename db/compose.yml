@@ -15,6 +15,11 @@ services:
   wholesale-db:
     image: postgres:16          # 버전을 못 박는다. 팀과 같은 걸 써야 한다
     container_name: ondo-wholesale-db
+    # 공유 메모리. 도커 기본값 64MB 로는 병렬 쿼리가 몰리면 PostgreSQL 이
+    # "could not resize shared memory segment: No space left on device" 로 쿼리를 실패시킨다.
+    # 상품 10만 건 부하 테스트에서 소매접점 상품 목록이 71% 실패했다(MUL-118).
+    # RDS 에는 없는 제약이라 로컬 결과가 운영과 달라진다 — 늘려서 맞춘다
+    shm_size: 1g
     environment:
       POSTGRES_DB: ondo_wholesale
       POSTGRES_USER: ondo
@@ -33,6 +38,7 @@ services:
   retail-db:
     image: postgres:16
     container_name: ondo-retail-db
+    shm_size: 1g                # 도매와 같은 이유
     environment:
       POSTGRES_DB: ondo_retail
       POSTGRES_USER: ondo
