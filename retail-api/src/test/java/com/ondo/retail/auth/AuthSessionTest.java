@@ -61,6 +61,26 @@ class AuthSessionTest {
     }
 
     @Test
+    @DisplayName("세션을 들고 로그인해도 새 세션을 준다 — 세션 고정 방어 (MUL-119)")
+    void 로그인하면_세션_id_가_바뀐다() throws Exception {
+        String 먼저_받은_세션 = 세션(post("/api/retail/auth/login", LOGIN_BODY, null));
+
+        // 공격자가 알고 있는 세션 id 를 피해자가 들고 로그인하는 상황
+        HttpResponse<String> 다시_로그인 = post("/api/retail/auth/login", LOGIN_BODY, 먼저_받은_세션);
+        assertThat(다시_로그인.statusCode()).isEqualTo(200);
+        assertThat(다시_로그인.headers().firstValue("set-cookie"))
+                .as("들고 온 세션을 그대로 쓰면 새 쿠키가 안 나간다 — 그게 이 버그였다")
+                .isPresent();
+
+        String 새_세션 = 세션(다시_로그인);
+        assertThat(새_세션).isNotEqualTo(먼저_받은_세션);
+        assertThat(get("/api/retail/auth/me", 새_세션).statusCode()).isEqualTo(200);
+        assertThat(get("/api/retail/auth/me", 먼저_받은_세션).statusCode())
+                .as("옛 세션 id 로는 더 안 통해야 공격자가 미리 심은 id 가 쓸모없어진다")
+                .isEqualTo(401);
+    }
+
+    @Test
     @DisplayName("로그인에 실패하면 세션을 주지 않는다")
     void 실패하면_쿠키가_없다() throws Exception {
         HttpResponse<String> 응답 = post("/api/retail/auth/login", """
@@ -68,6 +88,11 @@ class AuthSessionTest {
 
         assertThat(응답.statusCode()).isEqualTo(401);
         assertThat(응답.headers().firstValue("set-cookie")).isEmpty();
+    }
+
+    /** set-cookie 에서 "이름=값" 만 떼어낸다. */
+    private static String 세션(HttpResponse<String> 응답) {
+        return 응답.headers().firstValue("set-cookie").orElseThrow().split(";", 2)[0];
     }
 
     private HttpResponse<String> post(String path, String body, String cookie) throws Exception {

@@ -121,6 +121,15 @@ public class AuthController {
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
 
+        // 옛 세션을 버리고 새로 만든다 (MUL-119).
+        //
+        // 컨트롤러에서 직접 로그인시키면 스프링 시큐리티의 세션 고정 방어가 이 경로엔 돌지 않는다.
+        // 그대로 두면 들고 온 세션에 로그인 정보가 덮어써진다 — 공격자가 미리 심어둔 세션 id 가
+        // 로그인 뒤에도 살아서 피해자 계정으로 통한다. 도매 SessionAuthenticator 와 같은 처리다.
+        HttpSession previous = request.getSession(false);
+        if (previous != null) {
+            previous.invalidate();
+        }
         request.getSession(true);                                   // 세션을 만든다
         securityContextRepository.saveContext(context, request, response);
     }
