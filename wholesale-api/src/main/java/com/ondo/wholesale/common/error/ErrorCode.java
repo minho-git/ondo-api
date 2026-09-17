@@ -94,7 +94,9 @@ public enum ErrorCode {
     DUPLICATE_ORDER(HttpStatus.BAD_REQUEST, "같은 주문에 두 번 배분할 수 없습니다."),
     ORDER_RETAILER_MISMATCH(HttpStatus.BAD_REQUEST, "이 소매처의 주문이 아닙니다."),
     ORDER_NOT_CONFIRMED(HttpStatus.CONFLICT, "확정된 주문에만 배분할 수 있습니다."),
-    ALLOCATION_EXCEEDS_PAYMENT(HttpStatus.CONFLICT, "배분 합계가 입금액을 넘을 수 없습니다."),
+    // 입금 등록은 이번 입금액 + 남은 선수금까지 붙일 수 있다 (MUL-125)
+    ALLOCATION_EXCEEDS_PAYMENT(HttpStatus.CONFLICT, "배분 합계가 입금액과 남은 선수금을 넘을 수 없습니다."),
+    ALLOCATION_EXCEEDS_PREPAID(HttpStatus.CONFLICT, "배분 합계가 남은 선수금을 넘을 수 없습니다."),
     ALLOCATION_EXCEEDS_OUTSTANDING(HttpStatus.CONFLICT, "주문의 남은 미수보다 많이 배분할 수 없습니다."),
 
     // ── 회원 (MUL-70·71) ──
