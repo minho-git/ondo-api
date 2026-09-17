@@ -118,7 +118,7 @@ public class OrderQueryService {
                 order.getId(), order.getOrderNumber(), order.getOrderedAt(),
                 partner.getRetailerId(), partner.getRetailerName(),
                 firstLine.productName() + " (" + firstLine.colorName() + ")",
-                firstLine.additionalCount(), sums.orderAmount(),
+                firstLine.additionalCount(), sums.orderAmount(), settlement.shippedAmount(),
                 new OrderStatusResponse(derived.key(), derived.label()),
                 settlement.status(), settlement.outstandingAmount(),
                 derived.confirmable(), derived.cancellable(), derived.packable());

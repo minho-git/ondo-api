@@ -68,7 +68,7 @@ class OrderQueryApiTest {
     @Test
     void 주문목록은_data배열과_페이징meta를_함께_내린다() throws Exception {
         OrderSummaryResponse row = new OrderSummaryResponse(
-                1L, 1, OffsetDateTime.now(), 701L, "행복상회", "니트", 1, 13000,
+                1L, 1, OffsetDateTime.now(), 701L, "행복상회", "니트", 1, 13000, 0,
                 new OrderStatusResponse(OrderStatusKey.NEW, "신규 주문"),
                 SettlementStatus.UNPAID, 0, true, true, false);
         given(orderQueryService.list(anyLong(), any()))
