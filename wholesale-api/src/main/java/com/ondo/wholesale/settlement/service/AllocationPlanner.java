@@ -96,6 +96,27 @@ public class AllocationPlanner {
         return rows.getFirst();
     }
 
+    /** 거래처 행 락 — 입금 · 배분 id 에서 거래처를 알아낸 경우 (MUL-127). */
+    public PartnerRow lockPartnerById(long partnerId) {
+        return jdbc.queryForObject("""
+                select id, retailer_id, retailer_name from wholesale.partner where id = :id for update
+                """, new MapSqlParameterSource("id", partnerId),
+                (rs, i) -> new PartnerRow(rs.getLong("id"), rs.getLong("retailer_id"),
+                        rs.getString("retailer_name")));
+    }
+
+    public boolean isPaymentVoided(long paymentId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject(
+                "select voided_at is not null from wholesale.payment where id = :id",
+                new MapSqlParameterSource("id", paymentId), Boolean.class));
+    }
+
+    public boolean isAllocationCancelled(long allocationId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject(
+                "select cancelled_at is not null from wholesale.payment_allocation where id = :id",
+                new MapSqlParameterSource("id", allocationId), Boolean.class));
+    }
+
     /** 붙일 주문이 이 거래처의 확정 주문이고, 줄마다 남은 미수 안인지 본다. */
     public Map<Long, OrderRow> checkOrders(Long wholesalerId, long partnerId, List<PaymentAllocationRequest> lines) {
         if (lines.isEmpty()) {
