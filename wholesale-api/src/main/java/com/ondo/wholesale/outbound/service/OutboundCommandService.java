@@ -21,9 +21,7 @@ import com.ondo.wholesale.outbound.dto.OutboundDetailResponse;
 import com.ondo.wholesale.outbound.repository.OutboundRepository;
 import com.ondo.wholesale.product.domain.Variant;
 import com.ondo.wholesale.product.repository.VariantRepository;
-import com.ondo.wholesale.settlement.domain.LedgerEntry;
-import com.ondo.wholesale.settlement.domain.ReceivableEntryType;
-import com.ondo.wholesale.settlement.repository.LedgerEntryRepository;
+import com.ondo.wholesale.settlement.service.ReceivableLedgerWriter;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -62,7 +60,7 @@ public class OutboundCommandService {
     private final OutboundRepository outboundRepository;
     private final PartnerRepository partnerRepository;
     private final VariantRepository variantRepository;
-    private final LedgerEntryRepository ledgerEntryRepository;
+    private final ReceivableLedgerWriter receivableLedgerWriter;
     private final OutboundNumberAllocator outboundNumberAllocator;
     private final StatementNumberAllocator statementNumberAllocator;
     private final StockLedger stockLedger;
@@ -282,10 +280,9 @@ public class OutboundCommandService {
     }
 
     /**
-     * 미수 원장 기록 [X-1] — 스키마상 모든 행이 주문을 가리키므로 봉투의 주문마다
-     * OUTBOUND(+) 행 하나(금액 = 그 주문의 출고 품목 qty×단가 합, 주문 하나면 행도 하나).
-     * balance_after 는 검산용 파생값이라 partner 행 락 아래서 잇는다 — 입금(정산 티켓)과
-     * 같은 직렬화 지점이다.
+     * 미수 원장 기록 [X-1] — 봉투의 주문마다 OUTBOUND(+) 행 하나(금액 = 그 주문의 출고 품목
+     * qty×단가 합). 거래처 락·잔액 이어쓰기·거래처 미수 칸 갱신은 원장 쓰기가 맡는다 — 입금과
+     * 같은 직렬화 지점이다 (MUL-123).
      */
     private void appendReceivable(Outbound outbound, Map<Long, OrderItem> itemsById,
                                   List<ShipLine> lines, OffsetDateTime occurredAt) {
@@ -294,26 +291,10 @@ public class OutboundCommandService {
             long amount = (long) line.qty() * itemsById.get(line.orderItemId()).getUnitPrice();
             amountByOrder.merge(line.orderId(), amount, Long::sum);
         }
-        Long partnerId = outbound.getPartnerId();
-        jdbc.query("select id from wholesale.partner where id = :id for update",
-                new MapSqlParameterSource("id", partnerId), rs -> {
-        });
-        long balance = jdbc.queryForObject("""
-                select coalesce(sum(delta), 0) from wholesale.receivable_ledger
-                where partner_id = :partnerId
-                """, new MapSqlParameterSource("partnerId", partnerId), Long.class);
-        for (Map.Entry<Long, Long> entry : amountByOrder.entrySet()) {
-            balance += entry.getValue();
-            ledgerEntryRepository.save(LedgerEntry.builder()
-                    .partnerId(partnerId)
-                    .requestId("OUTBOUND-" + outbound.getId() + "-" + entry.getKey())
-                    .entryType(ReceivableEntryType.OUTBOUND)
-                    .delta(entry.getValue())
-                    .balanceAfter(balance)
-                    .orderId(entry.getKey())
-                    .outboundId(outbound.getId())
-                    .occurredAt(occurredAt)
-                    .build());
-        }
+        List<ReceivableLedgerWriter.Line> ledgerLines = amountByOrder.entrySet().stream()
+                .map(entry -> ReceivableLedgerWriter.Line.outbound(
+                        entry.getKey(), outbound.getId(), entry.getValue()))
+                .toList();
+        receivableLedgerWriter.append(outbound.getPartnerId(), occurredAt, ledgerLines);
     }
 }

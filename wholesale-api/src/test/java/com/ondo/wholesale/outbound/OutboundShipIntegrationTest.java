@@ -248,6 +248,8 @@ class OutboundShipIntegrationTest extends PostgresTestSupport {
         assertThat(정수("select sum(delta) from wholesale.receivable_ledger where partner_id = " + 가나상회))
                 .isEqualTo(13000);
         assertThat(정수("select max(balance_after) from wholesale.receivable_ledger")).isEqualTo(13000);
+        // 거래처 미수 칸은 원장 마지막 잔액을 베낀 값이다 — 미수 목록이 이 칸을 읽는다 (MUL-123)
+        assertThat(정수("select receivable_balance from wholesale.partner where id = " + 가나상회)).isEqualTo(13000);
         assertThat(정수("select count(distinct entry_type) from wholesale.receivable_ledger")).isEqualTo(1);
         assertThat(문자열("select min(entry_type) from wholesale.receivable_ledger")).isEqualTo("OUTBOUND");
         assertThat(정수("select count(*) from wholesale.receivable_ledger where outbound_id = " + 출고1)).isEqualTo(2);
