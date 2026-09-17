@@ -33,7 +33,9 @@ public class PaymentController {
 
             배분은 **출고된 금액에만** 붙는다. 주문별 상한 = 출고로 생긴 미수 − 이미 붙은 배분이라
             출고 전 주문은 0 이다(`ALLOCATION_EXCEEDS_OUTSTANDING`). 먼저 받은 돈은 선수금으로 남는다.
-            배분 합계 상한은 이번 입금액이다.
+            배분 합계 상한은 **이번 입금액 + 남은 선수금**이다 — 이번 입금을 먼저 쓰고 모자라면 오래된 입금부터
+            끌어 쓴다. 그래서 `unallocatedAmount`는 이번 입금에서 안 쓴 돈이고, `allocations[].paymentId`가
+            이번 입금이 아닐 수 있다. `prepaidRemaining`은 등록 후 거래처 선수금 전체.
 
             에러: 400 `VALIDATION_FAILED` · `PAID_AT_IN_FUTURE` · `DUPLICATE_ORDER` ·
             `ORDER_RETAILER_MISMATCH` / 404 `RESOURCE_NOT_FOUND` / 409 `IDEMPOTENCY_KEY_REUSED` ·

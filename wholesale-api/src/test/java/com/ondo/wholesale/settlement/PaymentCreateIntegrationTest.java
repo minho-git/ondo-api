@@ -67,6 +67,7 @@ class PaymentCreateIntegrationTest extends PostgresTestSupport {
                 .andExpect(jsonPath("$.data.retailerName").value("봄봄상회"))
                 .andExpect(jsonPath("$.data.amount").value(150000))
                 .andExpect(jsonPath("$.data.unallocatedAmount").value(150000))
+                .andExpect(jsonPath("$.data.prepaidRemaining").value(150000))
                 .andExpect(jsonPath("$.data.allocations.length()").value(0))
                 // 출고 13만 − 입금 15만 = 2만 선수금. 화면 계약은 양수 = 선수금
                 .andExpect(jsonPath("$.data.ledgerBalance").value(20000));
@@ -159,6 +160,33 @@ class PaymentCreateIntegrationTest extends PostgresTestSupport {
     }
 
     @Test
+    void 이번_입금이_모자라면_남은_선수금을_오래된_입금부터_끌어_쓴다() throws Exception {
+        입금한다(키(), 20000, 입금시각.minusDays(2), 101, "[]").andExpect(status().isCreated());
+        입금한다(키(), 20000, 입금시각.minusDays(1), 101, "[]").andExpect(status().isCreated());
+        long 첫입금 = 가장_오래된_입금_id();
+
+        // 바지 10만 = 이번 입금 7만 + 첫 입금 2만 + 둘째 입금 1만
+        입금한다(키(), 70000, "[ {\"orderId\": %d, \"amount\": 100000} ]".formatted(바지주문))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.unallocatedAmount").value(0))
+                .andExpect(jsonPath("$.data.allocations.length()").value(3))
+                .andExpect(jsonPath("$.data.allocations[0].amount").value(70000))
+                .andExpect(jsonPath("$.data.allocations[1].paymentId").value(첫입금))
+                .andExpect(jsonPath("$.data.allocations[1].amount").value(20000))
+                .andExpect(jsonPath("$.data.allocations[2].amount").value(10000))
+                .andExpect(jsonPath("$.data.prepaidRemaining").value(10000));
+    }
+
+    @Test
+    void 이번_입금과_선수금을_합쳐도_모자라면_409다() throws Exception {
+        입금한다(키(), 20000, 입금시각.minusDays(1), 101, "[]").andExpect(status().isCreated());
+
+        입금한다(키(), 70000, "[ {\"orderId\": %d, \"amount\": 100000} ]".formatted(바지주문))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ALLOCATION_EXCEEDS_PAYMENT"));
+    }
+
+    @Test
     void 확정_안_된_주문에는_배분할_수_없다() throws Exception {
         long 신규주문 = OrderFixture.주문을_넣는다(jdbc, wholesalerId, 봄봄, 9, "NEW", OffsetDateTime.now());
 
@@ -242,6 +270,11 @@ class PaymentCreateIntegrationTest extends PostgresTestSupport {
                           "paidBy": "AGENT", "method": "CASH", "memo": "삼촌 대납",
                           "allocations": %s }
                         """.formatted(retailerId, amount, paidAt, allocations)));
+    }
+
+    private long 가장_오래된_입금_id() {
+        return jdbc.queryForObject(
+                "select id from wholesale.payment where partner_id = ? order by paid_at, id limit 1", Long.class, 봄봄);
     }
 
     private static String 키() {
