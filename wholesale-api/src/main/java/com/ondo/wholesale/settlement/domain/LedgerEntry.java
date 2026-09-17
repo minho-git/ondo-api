@@ -45,22 +45,22 @@ public class LedgerEntry {
     @Column(name = "entry_type", nullable = false, updatable = false, length = 20)
     private ReceivableEntryType entryType;
 
-    /** 부호 포함 — OUTBOUND(+) · PAYMENT(−) · ADJUST(±). */
+    /** 부호 포함 — OUTBOUND(+) · PAYMENT(−) · PAYMENT_VOID(+) · ADJUST(±). 플러스 = 갚을 돈이 늘었다. */
     @Column(nullable = false, updatable = false)
     private long delta;
 
     @Column(name = "balance_after", nullable = false, updatable = false)
     private long balanceAfter;
 
-    /** 모든 행이 주문을 가리킨다 — 주문별 정산 파생(OrderSummaryReader)의 축. */
-    @Column(name = "order_id", nullable = false, updatable = false)
+    /** OUTBOUND 행만 값. 입금은 주문을 가리키지 않는다 — 어느 주문 값인지는 배분이 적는다 (MUL-123). */
+    @Column(name = "order_id", updatable = false)
     private Long orderId;
 
     /** OUTBOUND 행만 값. */
     @Column(name = "outbound_id", updatable = false)
     private Long outboundId;
 
-    /** PAYMENT 행 필수 — 정산 티켓이 채운다. */
+    /** PAYMENT · PAYMENT_VOID 행 필수. */
     @Column(name = "payment_id", updatable = false)
     private Long paymentId;
 
