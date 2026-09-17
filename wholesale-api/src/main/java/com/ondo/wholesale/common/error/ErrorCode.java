@@ -88,6 +88,15 @@ public enum ErrorCode {
     DUPLICATE_BACKORDER(HttpStatus.BAD_REQUEST, "같은 미송을 두 번 담을 수 없습니다."),
     BACKORDER_NOT_OPEN(HttpStatus.CONFLICT, "열려 있는 미송이 아닙니다."),
 
+    // ── 정산 (MUL-124) ──
+    // HTTP 상태는 입금 계약 스텁(PaymentController @Operation)이 적은 대로다.
+    PAID_AT_IN_FUTURE(HttpStatus.BAD_REQUEST, "입금 일시는 지금보다 뒤일 수 없습니다."),
+    DUPLICATE_ORDER(HttpStatus.BAD_REQUEST, "같은 주문에 두 번 배분할 수 없습니다."),
+    ORDER_RETAILER_MISMATCH(HttpStatus.BAD_REQUEST, "이 소매처의 주문이 아닙니다."),
+    ORDER_NOT_CONFIRMED(HttpStatus.CONFLICT, "확정된 주문에만 배분할 수 있습니다."),
+    ALLOCATION_EXCEEDS_PAYMENT(HttpStatus.CONFLICT, "배분 합계가 입금액을 넘을 수 없습니다."),
+    ALLOCATION_EXCEEDS_OUTSTANDING(HttpStatus.CONFLICT, "주문의 남은 미수보다 많이 배분할 수 없습니다."),
+
     // ── 회원 (MUL-70·71) ──
     // 심사 현황·재신청은 계약 스텁이 없어 선등록할 코드가 없다 — 구현이 이 자리에 채운다.
 

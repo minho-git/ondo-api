@@ -1,8 +1,6 @@
 package com.ondo.wholesale.settlement;
 
-import com.ondo.wholesale.order.PaymentMethod;
 import com.ondo.wholesale.settlement.dto.LedgerEntryResponse;
-import com.ondo.wholesale.settlement.dto.PaymentCreatedResponse;
 import com.ondo.wholesale.settlement.dto.ReceivableLedgerResponse;
 import com.ondo.wholesale.settlement.dto.ReceivableRetailerResponse;
 
@@ -16,19 +14,6 @@ final class SettlementStubExamples {
     private static final ZoneOffset KST = ZoneOffset.ofHours(9);
 
     private SettlementStubExamples() {
-    }
-
-    static PaymentCreatedResponse createdPayment() {
-        return new PaymentCreatedResponse(
-                4401L, 3307L, "부산 상사", 400000,
-                OffsetDateTime.of(2025, 8, 14, 15, 30, 0, 0, KST),
-                PaidBy.RETAILER, PaymentMethod.CASH, "8월 정산금 납부",
-                0,
-                List.of(new PaymentCreatedResponse.Allocation(
-                        7701L, 5606L, 6, 71000,
-                        OffsetDateTime.of(2025, 8, 14, 15, 30, 12, 0, KST))),
-                -235000,
-                OffsetDateTime.of(2025, 8, 14, 15, 30, 12, 0, KST));
     }
 
     static List<ReceivableRetailerResponse> receivableRetailers() {
