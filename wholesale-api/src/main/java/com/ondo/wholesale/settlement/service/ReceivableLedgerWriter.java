@@ -46,6 +46,12 @@ public class ReceivableLedgerWriter {
                     "OUTBOUND-" + outboundId + "-" + orderId, orderId, outboundId, null, null);
         }
 
+        /** 입금 취소로 갚을 돈이 다시 늘어난다(+). 취소한 입금을 가리킨다 (MUL-127). */
+        public static Line paymentVoid(long paymentId, long amount) {
+            return new Line(ReceivableEntryType.PAYMENT_VOID, amount,
+                    "PAYMENT_VOID-" + paymentId, null, null, paymentId, null);
+        }
+
         /** 입금으로 갚을 돈이 줄어든다(−). 주문을 가리키지 않는다 — 어느 주문 값인지는 배분이 적는다. */
         public static Line payment(long paymentId, long amount) {
             return new Line(ReceivableEntryType.PAYMENT, -amount,

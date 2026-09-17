@@ -1,11 +1,13 @@
 package com.ondo.wholesale.settlement;
 
 import com.ondo.wholesale.security.WholesalePrincipal;
+import com.ondo.wholesale.settlement.dto.AllocationCancelledResponse;
 import com.ondo.wholesale.settlement.dto.AllocationCreateRequest;
 import com.ondo.wholesale.settlement.dto.AllocationCreatedResponse;
 import com.ondo.wholesale.settlement.dto.PrepaidSummaryResponse;
 import com.ondo.wholesale.settlement.service.AllocationCommandService;
 import com.ondo.wholesale.settlement.service.PrepaidQueryService;
+import com.ondo.wholesale.settlement.service.SettlementCancelService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,6 +34,7 @@ public class AllocationController {
 
     private final AllocationCommandService allocationCommandService;
     private final PrepaidQueryService prepaidQueryService;
+    private final SettlementCancelService settlementCancelService;
 
     @Operation(summary = "선수금으로 정산 (Idempotency-Key 필수)", description = """
             새 입금 없이 받아 둔 선수금을 출고된 주문에 붙인다 — 원장은 안 바뀐다.
@@ -59,6 +62,19 @@ public class AllocationController {
                 allocationCommandService.create(principal.wholesalerId(), idempotencyKey, request);
         return ResponseEntity.status(result.replayed() ? HttpStatus.OK : HttpStatus.CREATED)
                 .body(result.response());
+    }
+
+    @Operation(summary = "배분 취소", description = """
+            주문에 붙인 돈을 떼어낸다 (MUL-127). 줄은 지우지 않고 취소 표시만 한다. 원장은 안 바뀐다 —
+            돈은 그대로 받은 상태이고, 그 금액은 **선수금으로 돌아간다**. 주문의 남은 미수가 다시 늘어난다.
+            금액을 고치려면 취소하고 입금 등록 · 선수금 정산으로 다시 붙인다.
+
+            에러: 404 `RESOURCE_NOT_FOUND` / 409 `STATE_CONFLICT`(이미 취소된 배분 · 취소된 입금의 배분)""")
+    @PostMapping("/allocations/{allocationId}/cancel")
+    public AllocationCancelledResponse cancelAllocation(
+            @AuthenticationPrincipal WholesalePrincipal principal,
+            @PathVariable Long allocationId) {
+        return settlementCancelService.cancelAllocation(principal.wholesalerId(), allocationId);
     }
 
     @Operation(summary = "선수금 요약 (정산 탭 3카드)", description = """

@@ -48,4 +48,13 @@ public class PaymentAllocation {
         this.orderId = orderId;
         this.amount = amount;
     }
+
+    public boolean isCancelled() {
+        return cancelledAt != null;
+    }
+
+    /** 배분 취소 (MUL-127) — 시각만 찍는다. 읽는 곳이 전부 취소된 줄을 빼고 세므로 그 금액은 선수금으로 돌아간다. */
+    public void cancel(OffsetDateTime at) {
+        this.cancelledAt = at;
+    }
 }

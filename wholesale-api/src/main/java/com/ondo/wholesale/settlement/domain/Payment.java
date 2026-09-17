@@ -92,4 +92,14 @@ public class Payment {
         this.paidAt = paidAt;
         this.memo = memo;
     }
+
+    public boolean isVoided() {
+        return voidedAt != null;
+    }
+
+    /** 무효 표시 (MUL-127) — 행을 지우거나 금액을 고치지 않는다. 원장 반대 줄은 서비스가 원장 쓰기로 적는다. */
+    public void voidWith(String reason, OffsetDateTime at) {
+        this.voidReason = reason;
+        this.voidedAt = at;
+    }
 }

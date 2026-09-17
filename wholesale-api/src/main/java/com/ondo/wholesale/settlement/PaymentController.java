@@ -3,7 +3,10 @@ package com.ondo.wholesale.settlement;
 import com.ondo.wholesale.security.WholesalePrincipal;
 import com.ondo.wholesale.settlement.dto.PaymentCreateRequest;
 import com.ondo.wholesale.settlement.dto.PaymentCreatedResponse;
+import com.ondo.wholesale.settlement.dto.PaymentVoidRequest;
+import com.ondo.wholesale.settlement.dto.PaymentVoidedResponse;
 import com.ondo.wholesale.settlement.service.PaymentCommandService;
+import com.ondo.wholesale.settlement.service.SettlementCancelService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -25,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PaymentController {
 
     private final PaymentCommandService paymentCommandService;
+    private final SettlementCancelService settlementCancelService;
 
     @Operation(summary = "입금 등록 (배분 겸함, Idempotency-Key 필수)", description = """
             "입금만 진행"과 "입금 및 정산"이 같은 엔드포인트 — `allocations`가 비면 선수금.
@@ -55,5 +60,23 @@ public class PaymentController {
                 paymentCommandService.create(principal.wholesalerId(), idempotencyKey, request);
         return ResponseEntity.status(result.replayed() ? HttpStatus.OK : HttpStatus.CREATED)
                 .body(result.response());
+    }
+
+    @Operation(summary = "입금 취소 (사유 필수)", description = """
+            잘못 넣은 입금을 되돌린다 (MUL-127). 입금은 지우지 않고 무효 표시만 하고, 원장에 **입금 취소** 줄
+            (`entryType` `PAYMENT_VOID`, 화면 부호 음수)을 쌓는다 — 거래처 미수가 입금 전으로 돌아간다.
+            그 입금에서 나간 배분은 전부 효력을 잃어 주문 미수가 다시 생기고, 남았던 선수금도 사라진다.
+
+            응답의 `ledgerBalance`(음수 = 채무) · `prepaidRemaining`으로 헤더와 선수금 카드를 갱신한다.
+            취소는 되돌릴 수 없다 — 필요하면 입금을 새로 등록한다.
+
+            에러: 400 `VALIDATION_FAILED`(사유 없음 · 200자 초과) / 404 `RESOURCE_NOT_FOUND` /
+            409 `STATE_CONFLICT`(이미 취소된 입금)""")
+    @PostMapping("/api/wholesale/payments/{paymentId}/void")
+    public PaymentVoidedResponse voidPayment(
+            @AuthenticationPrincipal WholesalePrincipal principal,
+            @PathVariable Long paymentId,
+            @RequestBody PaymentVoidRequest request) {
+        return settlementCancelService.voidPayment(principal.wholesalerId(), paymentId, request);
     }
 }
