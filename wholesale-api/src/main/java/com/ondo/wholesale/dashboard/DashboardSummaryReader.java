@@ -12,17 +12,24 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 대시보드 summary 의 집계 조회 (MUL-120) — 화면 숫자마다 SQL 한 방.
+ * 대시보드 summary 의 집계 조회 (MUL-120 · MUL-135).
  *
- * <p>술어는 각 도메인의 원본 구현과 같아야 한다 — 숫자가 목록 화면과 어긋나면
- * 대시보드를 믿을 수 없다. 원본: 주문 칩 {@code OrderSummaryReader.chipCounts},
- * 포장 대기 {@code PackingQueueQueryService.queueWhere}, 출고 {@code OutboundSpecs},
- * 미송 {@code BackorderQueryService.OPEN_BACKORDER_FROM}.
+ * <p>무거운 넷(오늘 주문 · 확정 대기 건수 · 포장 대기 · 미송)은 요약 표에서 읽고,
+ * 가벼운 둘(출고 봉투 · 오늘 출고)은 원본에서 그대로 센다. 부분 인덱스가 있어
+ * 0.05ms 안쪽이라 요약을 둘 이유가 없다.
+ *
+ * <p>요약을 도입한 이유 — 주문 300만 건(상가 1곳 1년치)에서 집계 6종 합계가
+ * 인덱스를 걸어도 67ms 였다. 인덱스는 찾는 양을 줄이지만 세는 일은 그대로 남는다.
+ * 요약을 읽으면 0.2ms 다. 대신 값이 최대 갱신 주기만큼 오래될 수 있다 —
+ * 대시보드가 30초 폴링이라 화면에서 구분되지 않는다.
+ *
+ * <p>술어는 각 도메인의 원본 구현과 같아야 한다. 요약을 만드는 SQL 은
+ * {@link DashboardSummaryRefresher} 에 있고, 그쪽이 원본 술어를 따른다.
  */
 @Component
 public class DashboardSummaryReader {
 
-    /** 확정 기다리는 주문 — 없으면 count 0 에 나머지는 null. */
+    /** 확정 기다리는 주문 — 건수는 요약에서, 가장 오래된 한 건은 인덱스로 찾는다. */
     public record NewOrdersAgg(int count, OffsetDateTime oldestOrderedAt, String oldestRetailerName) {}
 
     /** 오늘(영업일) 주문 — 건수·금액은 취소 포함(주문 칩 ALL 과 같은 기준), 취소는 따로 센다. */
@@ -46,69 +53,75 @@ public class DashboardSummaryReader {
         this.jdbc = jdbc;
     }
 
-    /** 술어는 주문 칩 NEW 버킷과 동일 — {@code status = 'NEW'}. */
+    /**
+     * 건수는 요약에서 읽는다.
+     *
+     * <p>한 쿼리로 건수와 가장 오래된 주문을 같이 구하면 {@code count(*) over()} 때문에
+     * {@code limit 1} 인데도 전체를 센다 — 주문 300만 건에서 5ms 였다. 떼어내면 0.04ms.
+     */
     public NewOrdersAgg newOrders(long wholesalerId) {
-        List<NewOrdersAgg> rows = jdbc.query("""
-                select count(*) over() as cnt, o.ordered_at, pt.retailer_name
+        Integer count = jdbc.queryForObject("""
+                select coalesce((select new_count from wholesale.dashboard_counter
+                                  where wholesaler_id = :wholesalerId), 0)
+                """, Map.of("wholesalerId", wholesalerId), Integer.class);
+
+        List<Oldest> oldest = jdbc.query("""
+                select o.ordered_at, pt.retailer_name
                 from wholesale.orders o
                 join wholesale.partner pt on pt.id = o.partner_id
                 where o.wholesaler_id = :wholesalerId and o.status = 'NEW'
                 order by o.ordered_at asc, o.id asc
                 limit 1
                 """, Map.of("wholesalerId", wholesalerId),
-                (rs, rowNum) -> new NewOrdersAgg(rs.getInt("cnt"),
-                        rs.getObject("ordered_at", OffsetDateTime.class),
+                (rs, rowNum) -> new Oldest(rs.getObject("ordered_at", OffsetDateTime.class),
                         rs.getString("retailer_name")));
-        return rows.isEmpty() ? new NewOrdersAgg(0, null, null) : rows.getFirst();
+
+        int safeCount = count == null ? 0 : count;
+        return oldest.isEmpty()
+                ? new NewOrdersAgg(safeCount, null, null)
+                : new NewOrdersAgg(safeCount, oldest.getFirst().orderedAt(), oldest.getFirst().retailerName());
     }
 
-    /** 금액은 라인 스냅샷 합 — {@code OrderSummaryReader.qtySums}의 amount 와 같은 식. */
-    public TodayOrdersAgg todayOrders(long wholesalerId, OffsetDateTime businessDayStart) {
-        return jdbc.queryForObject("""
-                select count(distinct o.id)                                        as cnt,
-                       coalesce(sum(oi.qty * oi.unit_price), 0)                    as amount,
-                       count(distinct o.id) filter (where o.status = 'CANCELLED')  as cancelled
-                from wholesale.orders o
-                left join wholesale.order_item oi on oi.order_id = o.id
-                where o.wholesaler_id = :wholesalerId and o.ordered_at >= :start
-                """, Map.of("wholesalerId", wholesalerId, "start", businessDayStart),
-                (rs, rowNum) -> new TodayOrdersAgg(rs.getInt("cnt"), rs.getInt("amount"),
-                        rs.getInt("cancelled")));
+    private record Oldest(OffsetDateTime orderedAt, String retailerName) {}
+
+    /** 영업일 한 줄을 읽는다. 오늘 주문이 아직 없으면 행이 없고, 그때는 0 이다. */
+    public TodayOrdersAgg todayOrders(long wholesalerId, LocalDate businessDay) {
+        List<TodayOrdersAgg> rows = jdbc.query("""
+                select order_count, order_amount, cancelled_count
+                from wholesale.dashboard_daily
+                where wholesaler_id = :wholesalerId and business_day = :businessDay
+                """, Map.of("wholesalerId", wholesalerId, "businessDay", businessDay),
+                (rs, rowNum) -> new TodayOrdersAgg(rs.getInt("order_count"),
+                        (int) rs.getLong("order_amount"), rs.getInt("cancelled_count")));
+        return rows.isEmpty() ? new TodayOrdersAgg(0, 0, 0) : rows.getFirst();
     }
 
-    /** 대기 술어는 {@code PackingQueueQueryService.queueWhere}와 동일해야 한다 (D-073). */
+    /** 소매처를 행으로 들고 있으므로 세는 대신 행을 읽는다. */
     public PackingAgg packing(long wholesalerId) {
-        String joins = """
-                from wholesale.packing_item pi
-                join wholesale.packing pk on pk.id = pi.packing_id
-                join wholesale.orders o   on o.id = pk.order_id
-                join wholesale.partner pt on pt.id = o.partner_id
-                where o.wholesaler_id = :wholesalerId
-                  and pk.status = 'READY' and pk.outbound_id is null
-                  and pi.deleted_at is null
-                """;
-        Map<String, Long> params = Map.of("wholesalerId", wholesalerId);
-        PackingTotals totals = jdbc.queryForObject("""
-                select count(distinct pt.retailer_id) as retailer_count,
-                       coalesce(sum(pi.qty), 0)       as qty
-                """ + joins, params,
-                (rs, rowNum) -> new PackingTotals(rs.getInt("retailer_count"), rs.getInt("qty")));
         Map<ReceiveBy, Integer> byReceive = new EnumMap<>(ReceiveBy.class);
         for (ReceiveBy receiveBy : ReceiveBy.values()) {
             byReceive.put(receiveBy, 0);
         }
         jdbc.query("""
-                select o.receive_method, count(distinct pt.retailer_id) as cnt
-                """ + joins + " group by o.receive_method", params,
+                select receive_method, count(distinct retailer_id) as cnt
+                from wholesale.dashboard_packing_queue
+                where wholesaler_id = :wholesalerId and qty > 0
+                group by receive_method
+                """, Map.of("wholesalerId", wholesalerId),
                 rs -> {
                     byReceive.put(ReceiveBy.valueOf(rs.getString("receive_method")), rs.getInt("cnt"));
                 });
-        return new PackingAgg(totals.retailerCount(), totals.qty(), byReceive);
+
+        return jdbc.queryForObject("""
+                select count(distinct retailer_id) as retailer_count,
+                       coalesce(sum(qty), 0)       as qty
+                from wholesale.dashboard_packing_queue
+                where wholesaler_id = :wholesalerId and qty > 0
+                """, Map.of("wholesalerId", wholesalerId),
+                (rs, rowNum) -> new PackingAgg(rs.getInt("retailer_count"), rs.getInt("qty"), byReceive));
     }
 
-    private record PackingTotals(int retailerCount, int qty) {}
-
-    /** 봉투 상태는 컬럼이 아니라 {@code shipped_at} NULL 여부다 (D-074). 포장 시각 = 봉투 생성 시각. */
+    /** 봉투 상태는 컬럼이 아니라 {@code shipped_at} NULL 여부다 (D-074). 부분 인덱스로 충분하다. */
     public OutboundAgg outbound(long wholesalerId, OffsetDateTime businessDayStart) {
         return jdbc.queryForObject("""
                 select count(*)                                              as not_shipped,
@@ -131,18 +144,21 @@ public class DashboardSummaryReader {
                 (rs, rowNum) -> new TodayShippedAgg(rs.getInt("cnt"), rs.getInt("qty")));
     }
 
-    /** 조인·잔여 식은 {@code BackorderQueryService.OPEN_BACKORDER_FROM}·skuList 와 동일해야 한다. */
+    /**
+     * 미송 — SKU 별 잔여량은 요약에서 읽고, 입고일 판정만 variant 와 조인해 한다.
+     *
+     * <p>"입고일 지남"은 날짜가 바뀌면 저절로 변하는 값이라 세어 두지 않는다. 세어 두면
+     * 매일 다시 계산하는 일이 생긴다.
+     */
     public BackorderAgg backorder(long wholesalerId, LocalDate todayKst) {
         return jdbc.queryForObject("""
-                select count(distinct v.id)                                                     as sku_count,
-                       coalesce(sum(oi.qty - oi.allocated_qty), 0)                              as qty,
-                       count(distinct v.id) filter (where v.expected_inbound_date < :today)     as overdue,
-                       count(distinct v.id) filter (where v.expected_inbound_date is null)      as no_date
-                from wholesale.backorder b
-                join wholesale.order_item oi on oi.id = b.order_item_id
-                join wholesale.orders o      on o.id = oi.order_id
-                join wholesale.variant v     on v.id = oi.variant_id
-                where b.status = 'OPEN' and o.wholesaler_id = :wholesalerId
+                select count(*)                                                                 as sku_count,
+                       coalesce(sum(s.open_qty), 0)                                             as qty,
+                       count(*) filter (where v.expected_inbound_date < :today)                 as overdue,
+                       count(*) filter (where v.expected_inbound_date is null)                  as no_date
+                from wholesale.dashboard_backorder_sku s
+                join wholesale.variant v on v.id = s.variant_id
+                where s.wholesaler_id = :wholesalerId and s.open_qty > 0
                 """, Map.of("wholesalerId", wholesalerId, "today", todayKst),
                 (rs, rowNum) -> new BackorderAgg(rs.getInt("sku_count"), rs.getInt("qty"),
                         rs.getInt("overdue"), rs.getInt("no_date")));
