@@ -1,0 +1,76 @@
+── 신규주문
+  Buffers: shared hit=6038
+        Buffers: shared hit=6038
+        ->  Nested Loop  (cost=0.72..4107.26 rows=913 width=32) (actual rows=6000 loops=1)
+              Buffers: shared hit=6038
+              ->  Index Scan using orders_new_idx on orders o  (cost=0.42..3656.08 rows=913 width=24) (actual rows=6000 loops=1)
+                    Buffers: shared hit=6035
+                    Buffers: shared hit=3
+                    ->  Index Scan using partner_pkey on partner pt  (cost=0.29..1.02 rows=1 width=24) (actual rows=1 loops=1)
+                          Buffers: shared hit=3
+  Buffers: shared hit=245
+Execution Time: 5.616 ms
+
+── 오늘주문
+  Buffers: shared hit=18750 read=11388
+  ->  Sort  (cost=3768.79..3771.04 rows=900 width=25) (actual rows=18000 loops=1)
+        Sort Key: o.id
+        Sort Method: quicksort  Memory: 1612kB
+        Buffers: shared hit=18750 read=11388
+        ->  Nested Loop Left Join  (cost=7.94..3724.63 rows=900 width=25) (actual rows=18000 loops=1)
+              Buffers: shared hit=18747 read=11388
+              ->  Bitmap Heap Scan on orders o  (cost=7.51..1144.38 rows=300 width=17) (actual rows=6000 loops=1)
+                    Buffers: shared hit=2668 read=3343
+                    ->  Bitmap Index Scan on orders_recent_idx  (cost=0.00..7.43 rows=300 width=0) (actual rows=6000 loops=1)
+                          Buffers: shared hit=3 read=8
+              ->  Index Scan using order_item_order_idx on order_item oi  (cost=0.43..8.53 rows=7 width=16) (actual rows=3 loops=6000)
+
+── 포장대기
+  Buffers: shared hit=24029
+        Buffers: shared hit=24029
+        ->  Sort  (cost=31751.29..31754.67 rows=1352 width=12) (actual rows=0 loops=3)
+              Sort Key: pt.retailer_id
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=24029
+              Worker 0:  Sort Method: quicksort  Memory: 25kB
+              Worker 1:  Sort Method: quicksort  Memory: 25kB
+              ->  Nested Loop  (cost=71.95..31680.98 rows=1352 width=12) (actual rows=0 loops=3)
+                    Buffers: shared hit=24013
+                    ->  Nested Loop  (cost=71.52..31169.10 rows=451 width=16) (actual rows=0 loops=3)
+                          Buffers: shared hit=24013
+
+── 출고봉투
+  Buffers: shared hit=6
+  ->  Index Only Scan using outbound_open_idx on outbound ob  (cost=0.42..20.09 rows=895 width=8) (actual rows=0 loops=1)
+        Buffers: shared hit=6
+  Buffers: shared hit=129
+Execution Time: 0.026 ms
+
+── 오늘출고
+  Buffers: shared hit=9
+  ->  Sort  (cost=48533.21..48533.23 rows=6 width=12) (actual rows=0 loops=1)
+        Sort Key: ob.id
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=9
+        ->  Nested Loop Left Join  (cost=8.89..48533.14 rows=6 width=12) (actual rows=0 loops=1)
+              Buffers: shared hit=6
+                    Buffers: shared hit=6
+                    ->  Seq Scan on packing pk  (cost=0.00..42617.00 rows=2250000 width=16) (never executed)
+                          Buffers: shared hit=6
+                          ->  Index Scan using outbound_shipped_idx on outbound ob  (cost=0.43..8.45 rows=1 width=8) (actual rows=0 loops=1)
+                                Buffers: shared hit=6
+
+── 미송
+  Buffers: shared hit=63256 read=20899
+        Buffers: shared hit=63256 read=20899
+              Buffers: shared hit=63256 read=20899
+              ->  Sort  (cost=40428.90..40434.51 rows=2244 width=16) (actual rows=0 loops=3)
+                    Sort Key: oi.variant_id
+                    Sort Method: quicksort  Memory: 25kB
+                    Buffers: shared hit=63256 read=20899
+                    Worker 0:  Sort Method: quicksort  Memory: 25kB
+                    Worker 1:  Sort Method: quicksort  Memory: 25kB
+                    ->  Nested Loop  (cost=71.67..40304.00 rows=2244 width=16) (actual rows=0 loops=3)
+                          Buffers: shared hit=63240 read=20899
+                          ->  Nested Loop  (cost=71.24..36837.12 rows=7480 width=24) (actual rows=6000 loops=3)
+

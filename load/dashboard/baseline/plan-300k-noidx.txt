@@ -1,0 +1,79 @@
+── 신규주문
+  Buffers: shared hit=749
+  ->  Sort  (cost=2083.19..2083.41 rows=90 width=40) (actual rows=1 loops=1)
+        Sort Key: o.ordered_at, o.id
+        Sort Method: top-N heapsort  Memory: 25kB
+        Buffers: shared hit=749
+              Buffers: shared hit=743
+              ->  Hash Join  (cost=379.92..2081.61 rows=90 width=32) (actual rows=600 loops=1)
+                    Buffers: shared hit=743
+                    ->  Bitmap Heap Scan on orders o  (cost=20.92..1722.38 rows=90 width=24) (actual rows=600 loops=1)
+                          Buffers: shared hit=609
+                          ->  Bitmap Index Scan on orders_number_uk  (cost=0.00..20.90 rows=597 width=0) (actual rows=600 loops=1)
+                                Buffers: shared hit=9
+
+── 오늘주문
+  Buffers: shared hit=6920 read=2971
+  ->  Sort  (cost=22370.18..22370.40 rows=90 width=25) (actual rows=1800 loops=1)
+        Sort Key: o.id
+        Sort Method: quicksort  Memory: 133kB
+        Buffers: shared hit=6920 read=2971
+              Buffers: shared hit=6917 read=2971
+              ->  Seq Scan on order_item oi  (cost=0.00..18279.00 rows=900000 width=16) (actual rows=900000 loops=1)
+                    Buffers: shared hit=6308 read=2971
+                    Buffers: shared hit=609
+                    ->  Bitmap Heap Scan on orders o  (cost=20.91..1725.35 rows=30 width=17) (actual rows=600 loops=1)
+                          Buffers: shared hit=609
+                          ->  Bitmap Index Scan on orders_number_uk  (cost=0.00..20.90 rows=597 width=0) (actual rows=600 loops=1)
+
+── 포장대기
+  Buffers: shared hit=5546
+        Buffers: shared hit=5546
+        ->  Sort  (cost=15320.48..15320.82 rows=136 width=12) (actual rows=0 loops=3)
+              Sort Key: pt.retailer_id
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=5546
+              Worker 0:  Sort Method: quicksort  Memory: 25kB
+              Worker 1:  Sort Method: quicksort  Memory: 25kB
+              ->  Hash Join  (cost=5138.16..15315.66 rows=136 width=12) (actual rows=0 loops=3)
+                    Buffers: shared hit=5530
+                    ->  Parallel Seq Scan on packing_item pi  (cost=0.00..9121.50 rows=281250 width=12) (actual rows=1 loops=3)
+                          Buffers: shared hit=3
+
+── 출고봉투
+  Buffers: shared hit=6
+  ->  Bitmap Heap Scan on outbound ob  (cost=10.42..672.24 rows=88 width=8) (actual rows=0 loops=1)
+        Buffers: shared hit=6
+        ->  Bitmap Index Scan on outbound_number_uk  (cost=0.00..10.40 rows=264 width=0) (actual rows=0 loops=1)
+              Buffers: shared hit=6
+  Buffers: shared hit=94
+Execution Time: 0.035 ms
+
+── 오늘출고
+  Buffers: shared hit=1507
+  ->  Sort  (cost=17798.10..17798.12 rows=6 width=12) (actual rows=0 loops=1)
+        Sort Key: ob.id
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=1507
+              Buffers: shared hit=1504
+                    Buffers: shared hit=1504
+                    ->  Parallel Seq Scan on packing_item pi  (cost=0.00..9121.50 rows=281250 width=12) (never executed)
+                          Buffers: shared hit=1350
+                                Buffers: shared hit=1350
+                                ->  Parallel Seq Scan on packing pk  (cost=0.00..3335.53 rows=132353 width=16) (never executed)
+                                      Buffers: shared hit=1350
+
+── 미송
+  Buffers: shared hit=14034 read=2588 written=22
+        Buffers: shared hit=14034 read=2588 written=22
+        ->  Sort  (cost=16166.98..16167.54 rows=224 width=20) (actual rows=0 loops=3)
+              Sort Key: v.id
+              Sort Method: quicksort  Memory: 25kB
+              Buffers: shared hit=14034 read=2588 written=22
+              Worker 0:  Sort Method: quicksort  Memory: 25kB
+              Worker 1:  Sort Method: quicksort  Memory: 25kB
+              ->  Nested Loop  (cost=1729.18..16158.24 rows=224 width=20) (actual rows=0 loops=3)
+                    Buffers: shared hit=14018 read=2588 written=22
+                    ->  Nested Loop  (cost=1728.90..16090.29 rows=224 width=16) (actual rows=0 loops=3)
+                          Buffers: shared hit=14018 read=2588 written=22
+
