@@ -56,7 +56,16 @@ class RetryPolicyMeasurement {
     private static final int 밀린_주문 = 200;
 
     /** 도매가 죽어 있는 시간. 이 동안 재시도가 헛돈다. */
-    private static final Duration 장애 = Duration.ofSeconds(20);
+    private static final Duration 장애 = Duration.ofSeconds(10);
+
+    /**
+     * 정책마다 몇 번 돌려 중앙값을 쓸지.
+     *
+     * <p>한 번만 재면 값이 크게 흔들린다 — 도매가 살아나는 순간이 워커의 한 바퀴 중
+     * 어디에 떨어지느냐에 따라 몰림이 달라진다. 실제로 같은 정책이 88 과 115 로 나왔다.
+     * 대시보드 집계 측정(MUL-133)과 같은 이유로 중앙값을 쓴다.
+     */
+    private static final int 반복 = 3;
 
     /**
      * 몰림을 볼 때 쓰는 시간 칸.
@@ -114,9 +123,13 @@ class RetryPolicyMeasurement {
         Map<RetryPolicy, 결과> results = new EnumMap<>(RetryPolicy.class);
 
         for (RetryPolicy policy : RetryPolicy.values()) {
-            치운다();
-            주문서 = 주문서를_만든다();
-            results.put(policy, 한_정책을_잰다(policy));
+            List<결과> 회차 = new ArrayList<>();
+            for (int i = 0; i < 반복; i++) {
+                치운다();
+                주문서 = 주문서를_만든다();
+                회차.add(한_정책을_잰다(policy));
+            }
+            results.put(policy, 중앙값(회차));
         }
         표로_남긴다(results);
     }
@@ -238,14 +251,14 @@ class RetryPolicyMeasurement {
         StringBuilder md = new StringBuilder("""
                 # 재시도 정책 비교 — 측정 결과
 
-                밀린 주문 %d 건 · 도매 장애 %d 초 · 간격 200ms 부터 두 배(상한 3.2초)
+                밀린 주문 %d 건 · 도매 장애 %d 초 · 간격 200ms 부터 두 배(상한 3.2초) · %d 회 중앙값
 
                 재시도 횟수 상한은 사실상 없앴다. 상한에 걸려 포기하는 것과 간격 때문에
                 덜 두드리는 것이 섞이면 무엇 때문에 호출이 줄었는지 알 수 없다.
 
                 | 정책 | 접수 | 포기 | 도매 호출 | 장애 중 호출 | 복구 시간 | 최대 몰림(200ms) |
                 |---|---:|---:|---:|---:|---:|---:|
-                """.formatted(밀린_주문, 장애.toSeconds()));
+                """.formatted(밀린_주문, 장애.toSeconds(), 반복));
 
         results.forEach((policy, r) -> md.append(
                 "| %s | %d | %d | **%d** | %d | %d ms | **%d** |%n"
@@ -262,12 +275,20 @@ class RetryPolicyMeasurement {
                 실제 호출 시각이 아니라 <b>예약된 시각</b>으로 잰다 — 호출 시각으로 재면 워커가 한 바퀴에
                 몰아 처리하는 속도가 정책 차이를 덮는다.
 
-                지수도 이 값을 줄인다 — 간격이 벌어지며 세대가 나뉘기 때문이다. 다만 **한 세대 안에서는
-                여전히 다 같이 깨어난다.** 같은 순간에 실패한 건들이 같은 곡선을 타서다. 지터는 그 세대를
-                흩뜨려 한 번 더 줄인다.
+                **지수는 이 값을 줄이지 못한다.** 간격은 벌어지지만 같은 순간에 실패한 건들이 같은 곡선을
+                타므로 여전히 다 같이 깨어난다 — 밀린 200 건 대부분이 한 칸에 들어간다. 고정과 지수가
+                비슷하게 나오는 게 그 증거다. **몰림을 푸는 건 지터뿐이다.**
 
-                **복구 시간** — 도매가 살아난 순간부터 밀린 것이 전부 들어갈 때까지. 간격을 너무 벌리면
-                이 값이 늘어난다. 몰림을 줄이는 대가다.
+                **복구 시간** — 도매가 살아난 순간부터 밀린 것이 전부 들어갈 때까지. 지터는 대기를 흩뜨려
+                뒤로 처지는 건을 만들므로 이 값이 늘어난다. 몰림을 줄이는 대가다.
+
+                **대가가 싼 이유** — 고정이 제일 빠르지만(237ms 급) 그 순간 가장 세게 때린다. 막 일어난
+                도매가 그 파도를 맞으면 다시 쓰러지고, 그러면 복구가 아예 안 된다. **빠른 복구는 도매가
+                버텨줄 때만 의미가 있는 숫자다.** 게다가 도매는 이미 수십 초 죽어 있었다 — 거기 1 초가
+                더 붙는 걸 알아차릴 사람은 없고, 기한은 30 분이다.
+
+                > 한 번만 재면 값이 흔들린다 — 도매가 살아나는 순간이 워커의 한 바퀴 중 어디에 떨어지느냐에
+                > 따라 몰림이 달라진다. 항목마다 3 회의 중앙값을 쓴다.
 
                 > 간격을 운영값(1초부터, 상한 60초)보다 짧게 잡았다. 비율이 같으면 몰림의 모양도 같다 —
                 > 절대 시간이 아니라 정책 사이의 차이를 보는 측정이다.
@@ -277,6 +298,18 @@ class RetryPolicyMeasurement {
         Files.createDirectories(out.getParent());
         Files.writeString(out, md.toString());
         System.out.println(md);
+    }
+
+    /** 항목마다 따로 중앙값을 낸다. 한 회차를 통째로 고르면 그 회차의 우연이 다 따라온다. */
+    private static 결과 중앙값(List<결과> 회차) {
+        return new 결과(
+                가운데(회차, 결과::접수), 가운데(회차, 결과::포기), 가운데(회차, 결과::호출),
+                가운데(회차, 결과::장애중호출), 가운데(회차, 결과::복구시간), 가운데(회차, 결과::최대몰림));
+    }
+
+    private static long 가운데(List<결과> 회차, java.util.function.ToLongFunction<결과> 항목) {
+        long[] values = 회차.stream().mapToLong(항목).sorted().toArray();
+        return values[values.length / 2];
     }
 
     private static String 이름(RetryPolicy p) {
