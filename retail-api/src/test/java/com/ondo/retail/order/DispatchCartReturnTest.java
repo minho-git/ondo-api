@@ -29,9 +29,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  * <p>규칙은 하나다 — <b>성공 말고는 다 돌려준다.</b> 대기함이 맡은 줄은 장바구니에서
  * 빠져 있으므로, 서버가 포기하고도 안 돌려주면 물건이 증발한다.
  *
- * <p>스케줄러는 꺼 두고 워커를 직접 부른다. 배경 워커와 경합하면 결과가 흔들린다.
+ * <p>스케줄러는 테스트 전체에서 꺼져 있다(test 리소스의 application-local.yml).
+ * 배경 워커와 경합하면 결과가 흔들린다.
  */
-@SpringBootTest(properties = "ondo.order.dispatch.scheduler-enabled=false")
+@SpringBootTest
 class DispatchCartReturnTest {
 
     private static final long 소매처 = 1L;

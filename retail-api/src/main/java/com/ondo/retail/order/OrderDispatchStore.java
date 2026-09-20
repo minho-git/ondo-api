@@ -37,6 +37,7 @@ public class OrderDispatchStore {
     private final OrderDispatchRepository repository;
     private final OrderDispatchProperties properties;
     private final DispatchCartReturn cartReturn;
+    private final RetryPolicySwitch policy;
 
     /** 워커가 들고 갈 한 건. 엔티티를 트랜잭션 밖으로 내보내지 않으려고 값만 옮긴다. */
     public record Claimed(Long id, Long orderGroupId, Long wholesalerId,
@@ -101,8 +102,7 @@ public class OrderDispatchStore {
         }
 
         int attempts = row.getAttempts() + 1;
-        OffsetDateTime next = now.plus(properties.retry().policy()
-                .nextDelay(attempts, properties.retry()));
+        OffsetDateTime next = now.plus(policy.current().nextDelay(attempts, properties.retry()));
 
         // 다음 시도가 기한 밖이면 지금 끝낸다. 굳이 한 번 더 집었다가 버릴 이유가 없다
         if (attempts >= properties.retry().maxAttempts() || !next.isBefore(row.getExpiresAt())) {

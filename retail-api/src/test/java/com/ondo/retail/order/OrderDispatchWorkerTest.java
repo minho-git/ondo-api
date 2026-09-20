@@ -31,10 +31,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  *
  * <p>도매는 가짜로 세운다. 여기서 볼 것은 대기함의 상태 전이지 도매 연동이 아니다.
  *
- * <p>스케줄러는 꺼 둔다. 배경으로 도는 워커와 테스트가 부르는 워커가 같은 줄을 두고
- * 경합하면 어느 쪽이 잡는지가 그때그때 달라진다.
+ * <p>스케줄러는 테스트 전체에서 꺼져 있다(test 리소스의 application-local.yml).
+ * 배경으로 도는 워커와 테스트가 부르는 워커가 같은 줄을 두고 경합하면 어느 쪽이 잡는지가
+ * 그때그때 달라진다.
  */
-@SpringBootTest(properties = "ondo.order.dispatch.scheduler-enabled=false")
+@SpringBootTest
 class OrderDispatchWorkerTest {
 
     private static final long 소매처 = 1L;
