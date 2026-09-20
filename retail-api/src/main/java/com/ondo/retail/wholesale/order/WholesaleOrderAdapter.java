@@ -57,11 +57,17 @@ public class WholesaleOrderAdapter implements OrderClient {
             return fromError(command, e);
 
         } catch (RestClientException e) {
-            // 도매가 아예 안 뜨거나 제때 대답을 안 한 경우. 사용자가 다시 누르면 된다
+            // 도매가 아예 안 뜨거나(connect timeout) 제때 대답을 안 한 경우(read timeout).
+            //
+            // ⚠️ read timeout 이면 요청은 도매에 닿았을 수 있다. 도매가 주문을 만들어 놓고
+            //    응답만 못 보냈는지, 만들기 전에 죽었는지 여기서는 알 수 없다. 그래서
+            //    다시 보내도 되느냐가 문제인데 — 도매에 UNIQUE (retail_order_id,
+            //    wholesaler_id) 가 있어 두 번째 요청은 409 로 막히고, 아래에서 그걸
+            //    성공으로 친다. 모르면 다시 물어봐도 된다
             log.warn("도매 접수 호출 실패. wholesalerId={} retailOrderId={}",
                     command.wholesalerId(), command.retailOrderId(), e);
-            return WholesaleOrderReceipt.rejected("UPSTREAM_UNAVAILABLE",
-                    "도매처에 접수하지 못했어요. 장바구니에 그대로 있어요");
+            return WholesaleOrderReceipt.unreachable("UPSTREAM_UNAVAILABLE",
+                    "도매처에 접수하지 못했어요. 다시 시도하고 있어요");
         }
     }
 
@@ -115,7 +121,15 @@ public class WholesaleOrderAdapter implements OrderClient {
         if (ALREADY_CREATED.equals(error.code())) {
             log.info("이미 접수된 주문이다. 소매가 재시도한 것으로 본다. wholesalerId={} retailOrderId={}",
                     command.wholesalerId(), command.retailOrderId());
-            return new WholesaleOrderReceipt(true, null, null, null, null, "이미 접수된 주문이에요");
+            return new WholesaleOrderReceipt(true, null, null, null, null, "이미 접수된 주문이에요", false);
+        }
+
+        // 도매가 자기 사정으로 못 받은 것(5xx)은 다시 해볼 만하다. 우리 요청이 잘못된 게
+        // 아니라 도매가 아픈 거라서다. 4xx 는 재고 부족·판매 종료처럼 다시 해도 같은 답이 온다
+        if (e.getStatusCode().is5xxServerError()) {
+            log.warn("도매가 5xx 로 답했다. wholesalerId={} status={}",
+                    command.wholesalerId(), e.getStatusCode());
+            return WholesaleOrderReceipt.unreachable(error.code(), error.message());
         }
 
         log.info("도매가 주문을 거절했다. wholesalerId={} code={}", command.wholesalerId(), error.code());

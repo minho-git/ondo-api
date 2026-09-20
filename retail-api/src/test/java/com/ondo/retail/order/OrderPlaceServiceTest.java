@@ -64,7 +64,7 @@ class OrderPlaceServiceTest {
                 9001L, 옵션(9001L, 무드온, "무드온", 12500),
                 9002L, 옵션(9002L, 라온, "라온", 31000)));
         given(retailerRepository.findById(소매처)).willReturn(java.util.Optional.of(소매처_객체()));
-        given(writer.open(anyLong(), any(), any())).willReturn(주문서(5001L, "20260906-1420-0001"));
+        given(writer.open(anyLong(), any(), any(), any())).willReturn(주문서(5001L, "20260906-1420-0001"));
         given(writer.settle(anyLong(), anyLong(), anyBoolean(), any()))
                 .willAnswer(inv -> 주문서(5001L, "20260906-1420-0001"));
         given(writer.findAccepted(any())).willReturn(java.util.Optional.empty());
@@ -145,7 +145,7 @@ class OrderPlaceServiceTest {
     void 재시도로_이미_접수된_것은_성공이다() {
         // 도매는 409 만 주고 그 주문의 번호·금액은 안 준다
         given(orderClient.place(any())).willReturn(
-                new WholesaleOrderReceipt(true, null, null, null, null, "이미 접수된 주문이에요"));
+                new WholesaleOrderReceipt(true, null, null, null, null, "이미 접수된 주문이에요", false));
 
         PlaceOrderResponse response = service.place(소매처, "key-5", 요청());
 
@@ -187,7 +187,7 @@ class OrderPlaceServiceTest {
                 .isInstanceOf(BusinessException.class);
 
         verify(orderClient, never()).place(any());
-        verify(writer, never()).open(anyLong(), any(), any());
+        verify(writer, never()).open(anyLong(), any(), any(), any());
     }
 
     @Test

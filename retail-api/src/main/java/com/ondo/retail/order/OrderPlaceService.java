@@ -68,15 +68,25 @@ public class OrderPlaceService {
         Retailer retailer = retailerRepository.findById(retailerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
 
-        OrderGroup group = writer.open(retailerId, idempotencyKey, request);
+        // 주문서와 접수 대기함을 한 트랜잭션에 쓴다 (MUL-139). 도매를 부르는 도중에
+        // 태스크가 내려가도 주문 의사가 남는다
+        OrderGroup group = writer.open(retailerId, idempotencyKey, request,
+                saved -> grouped.orderable().entrySet().stream()
+                        .map(e -> toCommand(saved, retailer, request, e.getKey(), e.getValue(), variants))
+                        .toList());
 
         // ── 트랜잭션 밖. 도매처마다 한 번씩 부른다 ──
         Map<Long, WholesaleOrderReceipt> receipts = new LinkedHashMap<>();
-        grouped.orderable().forEach((wholesalerId, lines) -> receipts.put(wholesalerId,
-                orderClient.place(toCommand(group, retailer, request, wholesalerId, lines, variants))));
+        grouped.orderable().forEach((wholesalerId, lines) -> {
+            WholesaleOrderReceipt receipt =
+                    orderClient.place(toCommand(group, retailer, request, wholesalerId, lines, variants));
+            receipts.put(wholesalerId, receipt);
+            writer.recordAttempt(group.getId(), wholesalerId, receipt);
+        });
 
         // 담아둔 사이 못 팔게 된 줄은 도매를 안 부르고 거절로 둔다. 부를 필요가 없다 —
         // 도매가 어차피 LISTING_NOT_ON_SALE 을 준다
+        // 대기함에도 안 넣는다 — 다시 보낼 이유가 없으니 처음부터 없는 줄이다
         grouped.unorderable().forEach((wholesalerId, lines) -> receipts.put(wholesalerId,
                 WholesaleOrderReceipt.rejected("LISTING_NOT_ON_SALE",
                         "판매가 끝난 상품이 있어요. 장바구니에 그대로 있어요")));
