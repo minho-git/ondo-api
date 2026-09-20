@@ -121,6 +121,19 @@ public class OrderDispatch {
         this.lastError = error;
     }
 
+    /**
+     * 워커가 집어 가는 동안 다른 워커가 못 건드리게 잠깐 뒤로 민다 (MUL-140).
+     *
+     * <p><b>시도 횟수를 올리지 않는다.</b> 아직 불러보지 않았다 — 집기만 한 것이다.
+     * 여기서 올리면 워커가 호출 전에 죽을 때마다 횟수가 깎여 기회를 잃는다.
+     *
+     * <p>이 값이 재시도 간격을 늘리지는 않는다. 호출이 끝나면 결과에 따라 진짜 다음
+     * 시각으로 다시 쓴다. 워커가 호출 도중에 죽은 경우에만 이만큼 기다렸다 다시 잡힌다.
+     */
+    public void holdUntil(OffsetDateTime until) {
+        this.nextAttemptAt = until;
+    }
+
     /** 기한을 넘겼거나 시도 횟수를 다 썼다. */
     public void markExpired(String error) {
         this.status = DispatchStatus.EXPIRED;
