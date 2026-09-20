@@ -14,20 +14,25 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 대시보드 집계 쿼리 검증 (MUL-120) — 리더를 직접 호출한다.
+ * 대시보드 집계 쿼리 검증 (MUL-120 · MUL-135) — 리더를 직접 호출한다.
  * HTTP 계약은 {@code DashboardApiTest}, 조립은 summary 통합 테스트가 본다.
+ *
+ * <p>무거운 집계는 요약 표에서 읽으므로(MUL-135) 읽기 전에 재계산한다. 이 테스트는
+ * 집계값 검증인 동시에 <b>요약이 원본과 같은지</b>를 보는 검산이기도 하다.
  */
 @SpringBootTest
 @Transactional
 class DashboardSummaryReaderIntegrationTest extends PostgresTestSupport {
 
     @Autowired DashboardSummaryReader reader;
+    @Autowired DashboardSummaryRefresher refresher;
     @Autowired JdbcTemplate jdbc;
 
     private long wholesalerId;
@@ -58,6 +63,7 @@ class DashboardSummaryReaderIntegrationTest extends PostgresTestSupport {
         OrderFixture.주문을_넣는다(jdbc, wholesalerId, 모모샵, nextOrderNumber++, "CONFIRMED",
                 OffsetDateTime.now().minusHours(5));
 
+        refresher.refresh(wholesalerId);
         var agg = reader.newOrders(wholesalerId);
 
         assertThat(agg.count()).isEqualTo(2);
@@ -70,6 +76,7 @@ class DashboardSummaryReaderIntegrationTest extends PostgresTestSupport {
         OrderFixture.주문을_넣는다(jdbc, wholesalerId, 봄봄, nextOrderNumber++, "CONFIRMED",
                 OffsetDateTime.now());
 
+        refresher.refresh(wholesalerId);
         var agg = reader.newOrders(wholesalerId);
 
         assertThat(agg.count()).isZero();
@@ -79,20 +86,23 @@ class DashboardSummaryReaderIntegrationTest extends PostgresTestSupport {
 
     @Test
     void 영업일_시작_이후_주문만_건수와_금액에_잡힌다() {
-        OffsetDateTime 영업일시작 = OffsetDateTime.now().minusHours(2);
+        // 요약은 영업일(날짜) 단위로 쌓인다 — 경계는 KST 낮 12시다
+        OffsetDateTime 지금 = OffsetDateTime.now();
+        LocalDate 영업일 = BusinessDay.startFor(지금).atZoneSameInstant(ZoneId.of("Asia/Seoul")).toLocalDate();
         // 경계 뒤: 확정 1건(2장 × 10,000) + 취소 1건(1장 × 5,000) — 건수·금액은 취소 포함
         long 확정 = OrderFixture.주문을_넣는다(jdbc, wholesalerId, 봄봄, nextOrderNumber++,
-                "CONFIRMED", OffsetDateTime.now().minusHours(1));
+                "CONFIRMED", 지금.minusMinutes(10));
         OrderFixture.라인을_넣는다(jdbc, 확정, variantId, 2, 10000, 0, 0);
         long 취소 = OrderFixture.주문을_넣는다(jdbc, wholesalerId, 모모샵, nextOrderNumber++,
-                "CANCELLED", OffsetDateTime.now().minusMinutes(30));
+                "CANCELLED", 지금.minusMinutes(5));
         OrderFixture.라인을_넣는다(jdbc, 취소, variantId, 1, 5000, 0, 0);
         // 경계 앞: 지난 영업일 주문은 빠진다
         long 어제 = OrderFixture.주문을_넣는다(jdbc, wholesalerId, 봄봄, nextOrderNumber++,
-                "CONFIRMED", OffsetDateTime.now().minusHours(3));
+                "CONFIRMED", OffsetDateTime.now().minusDays(1));
         OrderFixture.라인을_넣는다(jdbc, 어제, variantId, 9, 1000, 0, 0);
 
-        var agg = reader.todayOrders(wholesalerId, 영업일시작);
+        refresher.refresh(wholesalerId);
+        var agg = reader.todayOrders(wholesalerId, 영업일);
 
         assertThat(agg.count()).isEqualTo(2);
         assertThat(agg.amount()).isEqualTo(25000);
@@ -123,6 +133,7 @@ class DashboardSummaryReaderIntegrationTest extends PostgresTestSupport {
         long 담긴포장 = OutboundFixture.묶인_포장을_넣는다(jdbc, 담긴주문, 봉투);
         OrderFixture.포장항목을_넣는다(jdbc, 담긴포장, 담긴라인, null, batchId, 3, false);
 
+        refresher.refresh(wholesalerId);
         var agg = reader.packing(wholesalerId);
 
         assertThat(agg.retailerCount()).isEqualTo(2);
@@ -177,6 +188,7 @@ class DashboardSummaryReaderIntegrationTest extends PostgresTestSupport {
         long 해소SKU = OrderFixture.상품_변형을_넣는다(jdbc, wholesalerId, leafId, colorId, "해소팬츠", 4);
         미송라인을_넣는다(해소SKU, 6, 6, "RESOLVED");
 
+        refresher.refresh(wholesalerId);
         var agg = reader.backorder(wholesalerId, LocalDate.now());
 
         assertThat(agg.skuCount()).isEqualTo(2);
@@ -200,6 +212,7 @@ class DashboardSummaryReaderIntegrationTest extends PostgresTestSupport {
         OutboundFixture.출고를_넣는다(jdbc, 남, 남거래처, 1);
         OrderFixture.미송을_넣는다(jdbc, 남라인, 3, "OPEN");
 
+        refresher.refresh(wholesalerId);
         assertThat(reader.packing(wholesalerId).retailerCount()).isZero();
         assertThat(reader.packing(wholesalerId).qty()).isZero();
         assertThat(reader.outbound(wholesalerId, OffsetDateTime.now().minusHours(2)).notShippedCount()).isZero();
