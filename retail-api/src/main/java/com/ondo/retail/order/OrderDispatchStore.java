@@ -36,6 +36,7 @@ public class OrderDispatchStore {
 
     private final OrderDispatchRepository repository;
     private final OrderDispatchProperties properties;
+    private final DispatchCartReturn cartReturn;
 
     /** 워커가 들고 갈 한 건. 엔티티를 트랜잭션 밖으로 내보내지 않으려고 값만 옮긴다. */
     public record Claimed(Long id, Long orderGroupId, Long wholesalerId,
@@ -56,13 +57,11 @@ public class OrderDispatchStore {
         List<Claimed> claimed = new ArrayList<>(rows.size());
         for (OrderDispatch row : rows) {
             if (row.isExpiredAt(now)) {
-                row.markExpired("기한을 넘겨 접수하지 않았다");
-                log.info("대기 주문이 기한을 넘겼다. dispatchId={} 시도={}", row.getId(), row.getAttempts());
+                giveUp(row, "기한을 넘겨 접수하지 않았다");
                 continue;
             }
             if (row.getAttempts() >= properties.retry().maxAttempts()) {
-                row.markExpired("재시도 횟수를 다 썼다. 마지막 오류: " + row.getLastError());
-                log.info("대기 주문이 재시도 횟수를 다 썼다. dispatchId={}", row.getId());
+                giveUp(row, "재시도 횟수를 다 썼다. 마지막 오류: " + row.getLastError());
                 continue;
             }
             // 부르는 동안 다른 워커가 못 건드리게 잠깐 뒤로 민다. 호출이 끝나면
@@ -90,11 +89,14 @@ public class OrderDispatchStore {
         OffsetDateTime now = OffsetDateTime.now();
 
         if (receipt.accepted()) {
+            // 접수된 것만 장바구니에서 영영 빠진다
             row.markSent();
             return false;
         }
         if (!receipt.retryable()) {
+            // 재고 없음 · 판매 종료. 다시 해도 같은 답이니 사장님께 돌려드린다
             row.markRejected(receipt.reason());
+            cartReturn.restore(row.getPayload(), receipt.reason());
             return false;
         }
 
@@ -104,10 +106,57 @@ public class OrderDispatchStore {
 
         // 다음 시도가 기한 밖이면 지금 끝낸다. 굳이 한 번 더 집었다가 버릴 이유가 없다
         if (attempts >= properties.retry().maxAttempts() || !next.isBefore(row.getExpiresAt())) {
-            row.markExpired(receipt.reason());
+            giveUp(row, receipt.reason());
             return false;
         }
         row.retryAt(next, receipt.reason());
         return true;
+    }
+
+    /**
+     * 사장님이 기다리지 않기로 했다 (MUL-141).
+     *
+     * <p>기다리라고 해놓고 빠져나갈 길이 없으면 안 된다. 동대문은 주문 시점이 중요해서
+     * 다른 도매에서 사기로 할 수 있다.
+     *
+     * @return 정말 취소했으면 true. 이미 접수됐거나 끝난 건이면 false
+     */
+    @Transactional
+    public boolean cancel(Long orderGroupId, Long wholesalerId, Long retailerId) {
+        OrderDispatch row = repository
+                .findByOrderGroupIdAndWholesalerId(orderGroupId, wholesalerId).orElse(null);
+
+        // 남의 주문을 취소하면 안 된다. 굳혀 둔 명령에 소매처가 들어 있다
+        if (row == null || !row.isPending() || !row.getPayload().retailerId().equals(retailerId)) {
+            return false;
+        }
+        row.markCancelled();
+        cartReturn.restore(row.getPayload(), "사장님이 대기를 취소했다");
+        return true;
+    }
+
+    /**
+     * 이 주문서의 대기 줄을 전부 접는다 (MUL-141).
+     *
+     * <p>도매처가 <b>전부</b> 못 받은 경우에 쓴다. 그때는 계약상 "주문서를 안 만든 것"
+     * 으로 보고 502 를 내는데, 주문서가 {@code FAILED} 라 내역에도 안 보인다.
+     * 그 상태로 서버가 나중에 몰래 넣으면 <b>사용자가 볼 수 없는 주문</b>이 생긴다.
+     * 서버는 사용자가 볼 수 있는 주문만 대신 넣는다.
+     *
+     * <p>장바구니는 건드리지 않는다 — 이 경우엔 애초에 빼지 않았다.
+     */
+    @Transactional
+    public void abandonAll(Long orderGroupId) {
+        repository.findByOrderGroupId(orderGroupId).stream()
+                .filter(OrderDispatch::isPending)
+                .forEach(OrderDispatch::markCancelled);
+    }
+
+    /** 서버가 손을 뗀다. 맡았던 물건은 장바구니로 돌려준다. */
+    private void giveUp(OrderDispatch row, String reason) {
+        row.markExpired(reason);
+        cartReturn.restore(row.getPayload(), reason);
+        log.info("대기 주문을 포기했다. dispatchId={} 시도={} 사유={}",
+                row.getId(), row.getAttempts(), reason);
     }
 }

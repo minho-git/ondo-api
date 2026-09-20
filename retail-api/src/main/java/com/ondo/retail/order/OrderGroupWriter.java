@@ -175,21 +175,32 @@ public class OrderGroupWriter {
     /**
      * 도매 결과를 주문서에 반영한다.
      *
-     * <p>접수된 도매처의 장바구니 줄만 뺀다. 실패한 줄까지 빼면 사용자가 다시 담아야
-     * 한다 — 도매가 잠깐 못 받은 것뿐인데.
+     * <p><b>장바구니에서 빼는 기준이 바뀌었다</b> (MUL-141). 전에는 접수된 줄만 뺐다 —
+     * 실패한 줄은 남겨야 사용자가 다시 누를 수 있었다. 이제는 서버가 대신 보내므로
+     * <b>서버가 맡은 줄도 뺀다.</b> 안 빼면 사용자와 서버가 각자 주문해 같은 물건이
+     * 두 번 들어간다. 도매의 멱등 제약은 이걸 못 막는다 — 사용자가 다시 누른 건
+     * 주문서가 달라서 서로 다른 주문으로 보인다.
      *
-     * @param anyAccepted 한 곳이라도 받아졌는지. 하나도 없으면 {@code FAILED} 로 남긴다.
-     *                    지우지 않는 건 왜 실패했는지 남기고 멱등키를 살리기 위해서다
+     * <p>맡은 줄은 서버가 손을 뗄 때 돌려준다({@link DispatchCartReturn}).
+     * 재고 부족처럼 다시 해도 소용없는 거절만 지금 그대로 남는다.
+     *
+     * @param acceptedCartItems 접수된 줄. 영영 빠진다
+     * @param pendingCartItems  서버가 맡은 줄. 포기·취소하면 돌아온다
+     * @param anyAccepted       한 곳이라도 받아졌는지. 하나도 없으면 {@code FAILED} 로 남긴다.
+     *                          지우지 않는 건 왜 실패했는지 남기고 멱등키를 살리기 위해서다
      */
     @Transactional
     public OrderGroup settle(Long orderGroupId, long acceptedAmount, boolean anyAccepted,
-                             List<CartItem> acceptedCartItems) {
+                             List<CartItem> acceptedCartItems, List<CartItem> pendingCartItems) {
         OrderGroup group = orderGroupRepository.findById(orderGroupId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.INTERNAL_ERROR));
 
         group.settle(acceptedAmount, anyAccepted);
         if (!acceptedCartItems.isEmpty()) {
             cartItemRepository.deleteAll(acceptedCartItems);
+        }
+        if (!pendingCartItems.isEmpty()) {
+            cartItemRepository.deleteAll(pendingCartItems);
         }
         return group;
     }

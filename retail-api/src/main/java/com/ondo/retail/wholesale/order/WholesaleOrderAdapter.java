@@ -129,7 +129,11 @@ public class WholesaleOrderAdapter implements OrderClient {
         if (e.getStatusCode().is5xxServerError()) {
             log.warn("도매가 5xx 로 답했다. wholesalerId={} status={}",
                     command.wholesalerId(), e.getStatusCode());
-            return WholesaleOrderReceipt.unreachable(error.code(), error.message());
+            // 문구는 도매 것을 안 쓰고 우리가 쓴다. 5xx 본문은 "서버 오류" 같은 일반 문구라
+            // 사용자에게 알려줄 게 없고, 무엇보다 이 줄은 장바구니에서 빠져 서버가 맡는다 —
+            // 도매 문구가 "장바구니에 그대로" 라고 하면 거짓이 된다 (MUL-141)
+            return WholesaleOrderReceipt.unreachable(error.code(),
+                    "도매처에 접수하지 못했어요. 다시 시도하고 있어요");
         }
 
         log.info("도매가 주문을 거절했다. wholesalerId={} code={}", command.wholesalerId(), error.code());
@@ -151,8 +155,10 @@ public class WholesaleOrderAdapter implements OrderClient {
         } catch (RuntimeException ignored) {
             // 아래 기본값으로 떨어진다
         }
+        // 장바구니가 어떻게 되는지는 여기서 모른다. 재시도 여부에 따라 갈리므로
+        // 부르는 쪽이 정한다 (MUL-141)
         log.warn("도매 에러 본문을 못 읽었다. status={}", e.getStatusCode());
-        return new WholesaleError("UPSTREAM_ERROR", "도매처에 접수하지 못했어요. 장바구니에 그대로 있어요");
+        return new WholesaleError("UPSTREAM_ERROR", "도매처에 접수하지 못했어요");
     }
 
     private static WholesaleOrderCreateRequest toRequest(WholesaleOrderCommand command) {
