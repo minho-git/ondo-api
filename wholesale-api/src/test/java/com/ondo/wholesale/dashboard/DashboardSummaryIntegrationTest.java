@@ -5,6 +5,7 @@ import com.ondo.wholesale.support.MasterDataFixture;
 import com.ondo.wholesale.support.OrderFixture;
 import com.ondo.wholesale.support.OutboundFixture;
 import com.ondo.wholesale.support.PostgresTestSupport;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 
@@ -23,11 +23,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * summary 조립 통합 검증 (MUL-120) — 실 DB 픽스처로 GET 한 번에 모든 영역이 채워지는지.
  * 각 집계의 술어 상세는 {@code DashboardSummaryReaderIntegrationTest}가 전담한다.
+ *
+ * <p><b>이 테스트만 {@code @Transactional} 이 아니다</b> — 요약 갱신은 조회와 다른 트랜잭션에서
+ * 커밋된다(MUL-135). 테스트를 트랜잭션으로 감싸면 픽스처가 커밋 전이라 갱신 쪽에서 안 보이고,
+ * 갱신 경로가 사실상 빠진 채로 통과한다. 그래서 커밋하고 돌린 뒤 직접 치운다.
+ * 실제로 이 경로의 버그(읽기 전용 트랜잭션 안에서 DELETE)를 부하 시험에서야 잡았다.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional
 class DashboardSummaryIntegrationTest extends PostgresTestSupport {
+
+    /** 픽스처가 쓰는 마스터 id 대역 (9xxx) — 치울 때 같은 값을 써야 한다. */
+    private static final long CATEGORY_BASE_ID = 9580;
+    private static final long COLOR_GROUP_ID = 9680;
+    private static final long COLOR_ID = 9681;
 
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
@@ -40,10 +49,31 @@ class DashboardSummaryIntegrationTest extends PostgresTestSupport {
     @BeforeEach
     void 도매처와_마스터를_심는다() {
         wholesalerId = MasterDataFixture.도매처를_넣는다(jdbc, "dashboard-summary@ondo.test", "9500000052");
-        long leafId = MasterDataFixture.카테고리_리프를_넣는다(jdbc, 9580);
-        long colorId = MasterDataFixture.색상을_넣는다(jdbc, 9680, 9681);
+        long leafId = MasterDataFixture.카테고리_리프를_넣는다(jdbc, CATEGORY_BASE_ID);
+        long colorId = MasterDataFixture.색상을_넣는다(jdbc, COLOR_GROUP_ID, COLOR_ID);
         봄봄 = OrderFixture.거래처를_넣는다(jdbc, wholesalerId, 761L, "봄봄");
         variantId = OrderFixture.상품_변형을_넣는다(jdbc, wholesalerId, leafId, colorId, "티셔츠", 1);
+    }
+
+    /**
+     * 커밋하고 돌았으니 직접 치운다. 다음 테스트가 남은 행을 보면 안 된다.
+     *
+     * <p>{@code common} 쪽도 같이 지운다 — 카테고리·색상은 다른 테스트가 개수를 세는 대상이라
+     * 한 줄만 남아도 그쪽이 깨진다. 픽스처가 쓰는 9xxx 대역만 골라 지운다.
+     */
+    @AfterEach
+    void 남긴_행을_지운다() {
+        jdbc.execute("""
+                truncate wholesale.dashboard_daily, wholesale.dashboard_counter,
+                         wholesale.dashboard_backorder_sku, wholesale.dashboard_packing_queue,
+                         wholesale.wholesaler cascade
+                """);
+        jdbc.update("delete from common.color where id = ?", COLOR_ID);
+        jdbc.update("delete from common.color_group where id = ?", COLOR_GROUP_ID);
+        // 자식부터 — parent_id 를 걸어 둔 체인이라 역순으로 지운다
+        for (long id = CATEGORY_BASE_ID + 2; id >= CATEGORY_BASE_ID; id--) {
+            jdbc.update("delete from common.category where id = ?", id);
+        }
     }
 
     @Test
