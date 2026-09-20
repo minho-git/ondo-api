@@ -1,0 +1,77 @@
+── 신규주문
+  Buffers: shared hit=3597
+        Buffers: shared hit=3597
+              Buffers: shared hit=3597
+              ->  Sort  (cost=5064.98..5080.47 rows=6197 width=31) (actual rows=6667 loops=3)
+                    Sort Key: o.ordered_at, o.id
+                    Sort Method: quicksort  Memory: 635kB
+                    Buffers: shared hit=3597
+                    Worker 0:  Sort Method: quicksort  Memory: 521kB
+                    Worker 1:  Sort Method: quicksort  Memory: 515kB
+                    ->  Hash Join  (cost=18.25..4674.65 rows=6197 width=31) (actual rows=6667 loops=3)
+                          Buffers: shared hit=3507
+                          ->  Parallel Seq Scan on orders o  (cost=0.00..4640.00 rows=6197 width=24) (actual rows=6667 loops=3)
+
+── 오늘주문
+  Buffers: shared hit=9746
+        Buffers: shared hit=9746
+        ->  Sort  (cost=14820.51..14836.18 rows=6270 width=25) (actual rows=10000 loops=3)
+              Sort Key: o.id
+              Sort Method: quicksort  Memory: 853kB
+              Buffers: shared hit=9746
+              Worker 0:  Sort Method: quicksort  Memory: 851kB
+              Worker 1:  Sort Method: quicksort  Memory: 856kB
+                    Buffers: shared hit=9672
+                    ->  Parallel Seq Scan on order_item oi  (cost=0.00..8686.00 rows=250000 width=16) (actual rows=200000 loops=3)
+                          Buffers: shared hit=6186
+                          Buffers: shared hit=3390
+
+── 포장대기
+  Buffers: shared hit=5256 read=3197
+        Buffers: shared hit=5256 read=3197
+        ->  Sort  (cost=15720.86..15776.85 rows=22395 width=12) (actual rows=26667 loops=3)
+              Sort Key: pt.retailer_id
+              Sort Method: quicksort  Memory: 1809kB
+              Buffers: shared hit=5256 read=3197
+              Worker 0:  Sort Method: quicksort  Memory: 1805kB
+              Worker 1:  Sort Method: quicksort  Memory: 1817kB
+              ->  Parallel Hash Join  (cost=7225.29..14102.72 rows=22395 width=12) (actual rows=26667 loops=3)
+                    Buffers: shared hit=5182 read=3197
+                    ->  Parallel Seq Scan on packing_item pi  (cost=0.00..6081.00 rows=187500 width=12) (actual rows=150000 loops=3)
+                          Buffers: shared hit=1009 read=3197
+
+── 출고봉투
+  Buffers: shared hit=900
+  ->  Seq Scan on outbound ob  (cost=0.00..2025.00 rows=14357 width=8) (actual rows=13333 loops=1)
+        Buffers: shared hit=900
+  Buffers: shared hit=91
+Execution Time: 3.433 ms
+
+── 오늘출고
+  Buffers: shared hit=903
+  ->  Sort  (cost=16329.44..16329.45 rows=6 width=12) (actual rows=0 loops=1)
+        Sort Key: ob.id
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=903
+              Buffers: shared hit=900
+              ->  Seq Scan on packing_item pi  (cost=0.00..8706.00 rows=450000 width=12) (never executed)
+                    Buffers: shared hit=900
+                          Buffers: shared hit=900
+                          ->  Seq Scan on packing pk  (cost=0.00..2842.00 rows=150000 width=16) (never executed)
+                                Buffers: shared hit=900
+                                ->  Seq Scan on outbound ob  (cost=0.00..2700.00 rows=1 width=8) (actual rows=0 loops=1)
+
+── 미송
+  Buffers: shared hit=11519
+        Buffers: shared hit=11519
+        ->  Sort  (cost=22308.22..22401.18 rows=37182 width=20) (actual rows=26667 loops=3)
+              Sort Key: v.id
+              Sort Method: quicksort  Memory: 1960kB
+              Buffers: shared hit=11519
+              Worker 0:  Sort Method: quicksort  Memory: 1953kB
+              Worker 1:  Sort Method: quicksort  Memory: 1924kB
+              ->  Hash Join  (cost=9362.15..19485.68 rows=37182 width=20) (actual rows=26667 loops=3)
+                    Buffers: shared hit=11445
+                    ->  Parallel Hash Join  (cost=9278.15..19303.91 rows=37182 width=16) (actual rows=26667 loops=3)
+                          Buffers: shared hit=11259
+

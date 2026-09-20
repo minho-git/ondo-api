@@ -1,0 +1,78 @@
+── 신규주문
+  Buffers: shared hit=611
+        Buffers: shared hit=611
+        ->  Nested Loop  (cost=0.71..746.85 rows=89 width=32) (actual rows=600 loops=1)
+              Buffers: shared hit=611
+              ->  Index Scan using orders_new_idx on orders o  (cost=0.41..361.97 rows=89 width=24) (actual rows=600 loops=1)
+                    Buffers: shared hit=608
+                    Buffers: shared hit=3
+                    ->  Index Scan using partner_pkey on partner pt  (cost=0.29..4.66 rows=1 width=24) (actual rows=1 loops=1)
+                          Buffers: shared hit=3
+  Buffers: shared hit=245
+Execution Time: 0.825 ms
+
+── 오늘주문
+  Buffers: shared hit=3021
+  ->  Sort  (cost=364.25..364.47 rows=87 width=25) (actual rows=1800 loops=1)
+        Sort Key: o.id
+        Sort Method: quicksort  Memory: 133kB
+        Buffers: shared hit=3021
+        ->  Nested Loop Left Join  (cost=5.15..361.45 rows=87 width=25) (actual rows=1800 loops=1)
+              Buffers: shared hit=3018
+              ->  Bitmap Heap Scan on orders o  (cost=4.72..114.73 rows=29 width=17) (actual rows=600 loops=1)
+                    Buffers: shared hit=606
+                    ->  Bitmap Index Scan on orders_recent_idx  (cost=0.00..4.72 rows=29 width=0) (actual rows=600 loops=1)
+                          Buffers: shared hit=6
+              ->  Index Scan using order_item_order_idx on order_item oi  (cost=0.42..8.48 rows=3 width=16) (actual rows=3 loops=600)
+
+── 포장대기
+  Buffers: shared hit=1809
+  ->  Sort  (cost=5254.80..5255.61 rows=327 width=12) (actual rows=0 loops=1)
+        Sort Key: pt.retailer_id
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=1809
+        ->  Nested Loop  (cost=10.05..5241.14 rows=327 width=12) (actual rows=0 loops=1)
+              Buffers: shared hit=1806
+              ->  Nested Loop  (cost=9.63..5124.80 rows=109 width=16) (actual rows=0 loops=1)
+                    Buffers: shared hit=1806
+                    ->  Nested Loop  (cost=9.34..4972.05 rows=109 width=16) (actual rows=0 loops=1)
+                          Buffers: shared hit=1806
+                          ->  Bitmap Heap Scan on orders o  (cost=9.05..1709.01 rows=597 width=16) (actual rows=600 loops=1)
+
+── 출고봉투
+  Buffers: shared hit=5
+  ->  Bitmap Heap Scan on outbound ob  (cost=4.96..279.17 rows=86 width=8) (actual rows=0 loops=1)
+        Buffers: shared hit=5
+        ->  Bitmap Index Scan on outbound_open_idx  (cost=0.00..4.93 rows=86 width=0) (actual rows=0 loops=1)
+              Buffers: shared hit=5
+  Buffers: shared hit=129
+Execution Time: 0.035 ms
+
+── 오늘출고
+  Buffers: shared hit=8
+  ->  Sort  (cost=4862.33..4862.35 rows=6 width=12) (actual rows=0 loops=1)
+        Sort Key: ob.id
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=8
+        ->  Nested Loop Left Join  (cost=8.75..4862.25 rows=6 width=12) (actual rows=0 loops=1)
+              Buffers: shared hit=5
+                    Buffers: shared hit=5
+                    ->  Seq Scan on packing pk  (cost=0.00..4262.00 rows=225000 width=16) (never executed)
+                          Buffers: shared hit=5
+                          ->  Index Scan using outbound_shipped_idx on outbound ob  (cost=0.30..8.32 rows=1 width=8) (actual rows=0 loops=1)
+                                Buffers: shared hit=5
+
+── 미송
+  Buffers: shared hit=8421
+  ->  Sort  (cost=7403.74..7405.09 rows=537 width=20) (actual rows=0 loops=1)
+        Sort Key: v.id
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=8421
+        ->  Nested Loop  (cost=10.18..7379.39 rows=537 width=20) (actual rows=0 loops=1)
+              Buffers: shared hit=8418
+              ->  Nested Loop  (cost=9.90..7216.51 rows=537 width=16) (actual rows=0 loops=1)
+                    Buffers: shared hit=8418
+                    ->  Nested Loop  (cost=9.47..6379.99 rows=1791 width=24) (actual rows=1800 loops=1)
+                          Buffers: shared hit=3018
+                          ->  Bitmap Heap Scan on orders o  (cost=9.05..1709.01 rows=597 width=8) (actual rows=600 loops=1)
+
