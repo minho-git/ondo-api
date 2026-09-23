@@ -27,14 +27,12 @@
 
 ## 구성
 
-```mermaid
-flowchart LR
-    소매처 --> R["retail-api<br/>:8080"]
-    도매매장 --> W["wholesale-api<br/>:8081"]
-    R -- "/api/retail-gateway" --> W
-    R --> RD[("ondo_retail<br/>:5433")]
-    W --> WD[("ondo_wholesale<br/>:5432")]
-```
+<div align="center">
+  <img src="docs/architecture.png" alt="온도 시스템 구성" width="100%">
+</div>
+
+<div align="center"><sub>도식 원본은 <code>docs/architecture.drawio</code></sub></div>
+
 
 **서버도 DB 도 따로다.** 도매와 소매는 영업 시간대와 사용량 곡선이 다르고,
 한쪽 장애가 다른 쪽으로 번지면 안 된다. 한 트랜잭션으로 묶을 수 없으니
