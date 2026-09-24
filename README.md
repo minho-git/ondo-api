@@ -25,6 +25,30 @@
 - 소매가 넣은 주문은 도매 ERP 로 바로 들어온다
 - 출고·미송·미수처럼 그동안 카카오톡으로 따로 알리던 내용도 소매처 화면에서 확인된다
 
+## 무엇을 할 수 있나
+
+### 도매 ERP — `wholesale-api`
+
+| | |
+|---|---|
+| **상품** | 상품 등록·수정·삭제, 색상·카테고리, 리스팅(소매에 노출되는 단위) 시즌 종료와 재오픈 |
+| **재고** | 입고 등록, 재고 조정, 변동 이력 조회 |
+| **주문** | 소매 주문 목록·상세, 확정과 부분 확정, 취소, 포장 지시 |
+| **출고** | 소매처별 포장 대기 조회, 출고 생성·확정, 거래명세서 |
+| **미송** | 품목별 미송 현황, 입고 예정일 등록, 입고분 배분 |
+| **정산** | 미수 원장, 입금 등록·취소, 선입금 배분, 계좌 관리 |
+| **대시보드** | 확정 대기·포장 대기·출고 미확정·미송·오늘 주문/취소/출고 집계 |
+
+### 소매 마켓 — `retail-api`
+
+| | |
+|---|---|
+| **인증** | 가입(사업자등록증을 S3 에 올린다), 로그인, 세션(Spring Session JDBC) |
+| **상품** | 도매가 올린 리스팅 목록·상세, 카테고리·필터 |
+| **장바구니** | 담기, 수량 변경, 빼기, 개수 배지 |
+| **주문** | 주문서 미리보기, 주문 넣기, 목록·상세, 취소 |
+| **미송·정산** | 내 미송 조회, 도매처별 미수 잔액과 원장 조회 |
+
 ## 구성
 
 <div align="center">
@@ -42,6 +66,49 @@
 |---|---|
 | **도매 ERP** (`wholesale-api`) | 상품·재고, 주문, 출고, 미송, 정산(미수 원장), 대시보드 집계, 소매 접점 게이트웨이 |
 | **소매 마켓** (`retail-api`) | 인증, 상품 목록, 장바구니, 주문, 미송, 정산 조회, 파일 업로드, 도매 서버 연동 |
+
+## API
+
+도매 58개 · 소매 22개. 아래 경로는 각각 `/api/wholesale`, `/api/retail` 을 생략했다.
+
+### 도매 ERP
+
+| 영역 | 주요 경로 | 수 |
+|---|---|---:|
+| 인증 | `/auth/login` `/auth/logout` `/auth/signup` | 3 |
+| 상품 | `/products` `/products/{id}` `/listings/{id}/season-end` `/categories` `/colors` | 9 |
+| 재고 | `/inbounds` `/variants/{id}/stock-adjustments` `/variants/{id}/stock-movements` | 3 |
+| 주문 | `/orders` `/orders/{id}/confirm` `/orders/{id}/cancel` `/orders/{id}/packings` | 7 |
+| 출고 | `/packing-items` `/outbounds` `/outbounds/{id}/ship` `/outbounds/{id}/statement` | 9 |
+| 미송 | `/backorders/variants` `/variants/{id}/backorders` `/variants/{id}/expected-inbound` | 4 |
+| 정산 | `/receivables` `/payments` `/payments/{id}/void` `/allocations` `/bank-accounts` | 11 |
+| 대시보드 | `/dashboard/summary` | 1 |
+
+### 소매 마켓
+
+| 영역 | 주요 경로 | 수 |
+|---|---|---:|
+| 인증 | `/auth/sign-up` `/auth/login` `/auth/me` `/auth/email-availability` | 5 |
+| 상품 | `/listings` `/listings/{id}` `/categories` `/filter-options` | 4 |
+| 장바구니 | `/cart-items` `/cart-items/count` `/cart-items/{id}` | 5 |
+| 주문 | `/checkout` `/orders` `/orders/{id}` `/orders/{id}/cancel` | 5 |
+| 미송 | `/backorders` | 1 |
+| 정산 | `/settlements` `/settlements/{wholesalerId}/ledger` | 2 |
+
+### 소매 → 도매 — `/api/retail-gateway`
+
+**소매가 도매를 부르는 통로는 이 11개뿐이다.** 도매 서버에 있지만 퍼블릭 ALB 에는 안 붙는다.
+프라이빗 서브넷의 내부 ALB 에만 노출하고, 시크릿 헤더를 상수 시간 비교로 검증한다.
+
+| 경로 | 무엇을 |
+|---|---|
+| `GET /listings` `/listings/{id}` `/categories` `/filter-options` `/variants` | 도매 상품을 소매 마켓에 보여준다 |
+| `POST /orders` · `GET /orders` `/wholesalers` | 소매 주문을 도매로 접수한다 |
+| `GET /backorders` | 미송을 소매처 화면에 보여준다 |
+| `GET /settlements` `/settlements/ledger` | 미수 잔액과 원장을 소매처가 본다 |
+
+> [!TIP]
+> 앱을 띄우면 `localhost:8081/docs.html`(도매) · `localhost:8080/docs`(소매) 에서 전체 명세를 볼 수 있다.
 
 ## 막혔던 곳과 푼 방법
 
